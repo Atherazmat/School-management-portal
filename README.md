@@ -1,1 +1,1 @@
-# Step-school-attendance-portal
+# School-management-portal
