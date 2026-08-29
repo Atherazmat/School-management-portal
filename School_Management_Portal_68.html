@@ -1,0 +1,3590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>School Management Portal</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E" />
+<style>
+  /* ============================= THEME VARIABLES ============================= */
+  :root{
+    --bg-grad: linear-gradient(160deg,#f5f2e6 0%,#faf8f0 45%,#f2eee0 100%);
+    --surface: rgba(255,255,255,0.72);
+    --surface-solid: #ffffff;
+    --border: rgba(26,26,26,0.10);
+    --text-primary: #1a1a1a;
+    --text-secondary: #5c5850;
+    --accent: #4b5320;
+    --accent-2: #b8860b;
+    --shadow: 0 10px 34px rgba(26,26,26,0.10);
+    --shadow-sm: 0 4px 14px rgba(26,26,26,0.08);
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+
+    --success:#4b5320; --success-bg: rgba(75,83,32,.14);
+    --warning:#b8860b; --warning-bg: rgba(184,134,11,.18);
+    --danger:#8b0000;  --danger-bg: rgba(139,0,0,.14);
+    --muted:#5c5850;   --muted-bg: rgba(92,88,80,.14);
+    --total:#1a1a1a;   --total-bg: rgba(26,26,26,.12);
+  }
+  html.dark{
+    --bg-grad: linear-gradient(160deg,#0f0f0b 0%,#161610 50%,#0f0f0b 100%);
+    --surface: rgba(30,28,20,0.6);
+    --surface-solid: #1e1c14;
+    --border: rgba(230,220,190,0.1);
+    --text-primary: #f0ead6;
+    --text-secondary: #c9c2a0;
+    --shadow: 0 10px 34px rgba(0,0,0,0.45);
+    --shadow-sm: 0 4px 14px rgba(0,0,0,0.35);
+  }
+
+  /* ============================= RESET / BASE ============================= */
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg-grad);
+    color:var(--text-primary);
+    min-height:100vh;
+    transition:background .5s ease, color .3s ease;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,p{ margin:0; }
+  button{ font-family:inherit; cursor:pointer; }
+  input,select,button{ font-size:.95rem; }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(100,116,139,.35); border-radius:10px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  /* decorative floating blobs */
+  .bg-blob{ position:fixed; border-radius:50%; filter:blur(80px); z-index:-1; opacity:.35; animation: float 16s ease-in-out infinite; will-change:transform; }
+  .bg-blob.one{ width:380px; height:380px; background:var(--accent); top:-120px; left:-100px; }
+  .bg-blob.two{ width:420px; height:420px; background:var(--accent-2); bottom:-140px; right:-120px; animation-delay:3s; animation-duration:19s; }
+  .bg-blob.three{ width:280px; height:280px; background:#8b0000; top:40%; left:55%; opacity:.16; animation-delay:6s; animation-duration:22s; }
+  @keyframes float{ 0%,100%{ transform:translate(0,0) scale(1); } 33%{ transform:translate(30px,-25px) scale(1.06); } 66%{ transform:translate(-20px,18px) scale(.96); } }
+
+  /* ============================= LOADING OVERLAY ============================= */
+  #loadingOverlay{
+    position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:18px; background:var(--bg-grad); transition:opacity .5s ease, visibility .5s ease;
+  }
+  #loadingOverlay.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+  .spinner{ position:relative; width:52px; height:52px; }
+  .spinner::before, .spinner::after{ content:""; position:absolute; inset:0; border-radius:50%; border:4px solid transparent; }
+  .spinner::before{ border-top-color:var(--accent); border-right-color:var(--accent); animation:spin .9s cubic-bezier(.6,.1,.4,.9) infinite; }
+  .spinner::after{ inset:9px; border-bottom-color:var(--accent-2); border-left-color:var(--accent-2); opacity:.7; animation:spin 1.3s linear infinite reverse; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .loading-text{ font-weight:600; color:var(--text-secondary); letter-spacing:.02em; animation:pulseText 1.6s ease-in-out infinite; }
+  @keyframes pulseText{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+
+  /* ============================= LAYOUT ============================= */
+  .app-shell{ max-width:1180px; margin:0 auto; padding:22px 20px 60px; animation:shellIn .55s cubic-bezier(.2,.8,.2,1); }
+  @keyframes shellIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
+
+  header.app-header{
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:18px 22px; margin-bottom:20px; border-radius:var(--radius-lg);
+    background:var(--surface); border:1px solid var(--border); box-shadow:var(--shadow-sm); backdrop-filter:blur(18px);
+    transition:box-shadow .3s ease;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-logo{ width:52px; height:52px; object-fit:contain; border-radius:10px; background:#fff; padding:4px; box-shadow:var(--shadow-sm); transition:transform .35s cubic-bezier(.34,1.56,.64,1); }
+  .brand-logo:hover{ transform:scale(1.08) rotate(-4deg); }
+  .brand h1{ background-size:200% auto; animation:sheen 6s ease-in-out infinite; }
+  @keyframes sheen{ 0%,100%{ background-position:0% center; } 50%{ background-position:100% center; } }
+  .brand h1{ font-size:1.3rem; font-weight:800; background:linear-gradient(120deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  html.dark .brand h1{ background:linear-gradient(120deg,#d4af37,#b8860b); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .brand p{ font-size:.78rem; color:var(--text-secondary); margin-top:2px; }
+  .header-right{ display:flex; align-items:center; gap:14px; }
+  #headerClock{
+    font-size:.95rem; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;
+    padding:6px 14px; border-radius:999px; background:rgba(184,134,11,.1); border:1px solid rgba(184,134,11,.18);
+  }
+  #darkModeToggle{
+    width:42px; height:42px; border-radius:50%; border:1px solid var(--border); background:var(--surface-solid);
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem; transition:transform .25s ease, box-shadow .25s ease;
+    box-shadow:var(--shadow-sm);
+  }
+  #darkModeToggle:hover{ transform:scale(1.08) rotate(10deg); }
+  #lockAppBtn{
+    width:42px; height:42px; border-radius:50%; border:1px solid var(--border); background:var(--surface-solid);
+    display:flex; align-items:center; justify-content:center; font-size:1.05rem; transition:transform .25s ease, box-shadow .25s ease;
+    box-shadow:var(--shadow-sm);
+  }
+  #lockAppBtn:hover{ transform:scale(1.08); box-shadow:0 8px 20px rgba(139,0,0,.25); }
+  #desktopModeToggle{
+    width:42px; height:42px; border-radius:50%; border:1px solid var(--border); background:var(--surface-solid);
+    display:flex; align-items:center; justify-content:center; font-size:1.05rem; transition:transform .25s ease, box-shadow .25s ease, background .2s ease;
+    box-shadow:var(--shadow-sm);
+  }
+  #desktopModeToggle:hover{ transform:scale(1.08); }
+  #desktopModeToggle.active{ background:linear-gradient(120deg,var(--accent),var(--accent-2)); box-shadow:0 8px 20px rgba(184,134,11,.35); }
+
+  /* ============================= DESKTOP MODE OVERRIDES ============================= */
+  html.desktop-mode .app-shell{ min-width:1180px; }
+  html.desktop-mode body{ overflow-x:auto; }
+
+  nav.tabs{ display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; }
+  .tab-btn{
+    position:relative; overflow:hidden; padding:10px 20px; border:1px solid var(--border); background:var(--surface); color:var(--text-secondary);
+    border-radius:999px; font-weight:600; font-size:.88rem; transition:color .25s ease, border-color .25s ease, transform .25s ease, box-shadow .25s ease; backdrop-filter:blur(10px);
+  }
+  .tab-btn:hover{ color:var(--text-primary); transform:translateY(-2px); }
+  .tab-btn.active{ background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff; border-color:transparent; box-shadow:0 8px 20px rgba(184,134,11,.35); animation:tabPop .35s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes tabPop{ 0%{ transform:scale(.92); } 60%{ transform:scale(1.03); } 100%{ transform:scale(1); } }
+
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; animation:fadeIn .45s cubic-bezier(.2,.8,.2,1); }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(12px) scale(.99); } to{ opacity:1; transform:translateY(0) scale(1); } }
+
+  .glass-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-sm); backdrop-filter:blur(18px); padding:20px;
+    transition:box-shadow .3s ease, transform .3s ease, border-color .3s ease;
+  }
+  .glass-card:hover{ box-shadow:var(--shadow); border-color:rgba(184,134,11,.22); }
+
+  /* ============================= BUTTONS / FORMS ============================= */
+  .btn{ position:relative; overflow:hidden; border:none; border-radius:var(--radius-sm); padding:11px 18px; font-weight:600; font-size:.88rem; transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, opacity .18s ease; }
+  .btn:active{ transform:scale(.95); }
+  .btn-primary{ background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff; box-shadow:0 8px 18px rgba(184,134,11,.32); }
+  .btn-primary:hover{ box-shadow:0 10px 26px rgba(184,134,11,.45); transform:translateY(-2px); }
+  .btn-secondary{ background:var(--text-primary); color:var(--surface-solid); opacity:.88; }
+  .btn-secondary:hover{ opacity:1; transform:translateY(-2px); }
+  .btn-outline{ background:transparent; border:1px solid var(--border); color:var(--text-primary); }
+  .btn-outline:hover{ background:rgba(184,134,11,.08); transform:translateY(-2px); }
+  .btn-outline-danger{ background:transparent; border:1px solid rgba(239,68,68,.4); color:var(--danger); }
+  .btn-outline-danger:hover{ background:var(--danger-bg); transform:translateY(-2px); }
+  @keyframes btnBounceIn{ 0%{ transform:scale(1); } 45%{ transform:scale(.92); } 100%{ transform:scale(1); } }
+  .btn.pulse-success{ animation:btnBounceIn .35s ease; box-shadow:0 0 0 4px var(--success-bg); }
+
+  input[type="text"], input[type="date"], select{
+    background:var(--surface-solid); border:1px solid var(--border); color:var(--text-primary);
+    padding:11px 14px; border-radius:var(--radius-sm); outline:none; transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  input[type="text"]:focus, input[type="date"]:focus, select:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(184,134,11,.18); }
+  select:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .field-group{ display:flex; flex-direction:column; gap:6px; }
+  .field-group label{ font-size:.78rem; font-weight:600; color:var(--text-secondary); }
+  .inline-form{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+  .icon-btn{ background:transparent; border:none; font-size:1.05rem; padding:6px 8px; border-radius:8px; color:var(--text-secondary); transition:background .2s ease, color .2s ease; }
+  .icon-btn.danger:hover{ background:var(--danger-bg); color:var(--danger); }
+
+  /* ============================= MARK ATTENDANCE TAB ============================= */
+  .mark-controls{ display:flex; flex-direction:column; gap:16px; margin-bottom:20px; }
+  .mark-form{ display:flex; gap:10px; flex-wrap:wrap; }
+  .mark-form input{ flex:1; min-width:200px; font-size:1.05rem; letter-spacing:.02em; }
+  .status-preview{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .preview-time{ font-size:.8rem; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+  .mark-controls-footer{ display:flex; justify-content:flex-end; }
+
+  .student-info-card{
+    display:none; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    padding:14px 16px; border-radius:var(--radius-md); background:rgba(184,134,11,.08);
+    border:1px solid rgba(184,134,11,.25); animation:fadeIn .3s ease;
+  }
+  .student-info-main{ display:flex; flex-direction:column; gap:2px; }
+  .student-info-name{ font-weight:700; font-size:.98rem; }
+  .student-info-meta{ font-size:.8rem; color:var(--text-secondary); }
+
+  .mark-lists{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  @media (max-width:920px){ .mark-lists{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:560px){ .mark-lists{ grid-template-columns:1fr; } }
+  .mark-lists .status-col{ animation:fadeIn .4s cubic-bezier(.2,.8,.2,1) backwards; }
+  .mark-lists .status-col:nth-child(1){ animation-delay:.03s; }
+  .mark-lists .status-col:nth-child(2){ animation-delay:.08s; }
+  .mark-lists .status-col:nth-child(3){ animation-delay:.13s; }
+  .mark-lists .status-col:nth-child(4){ animation-delay:.18s; }
+
+  .status-col{ padding:16px; display:flex; flex-direction:column; gap:10px; max-height:420px; transition:box-shadow .3s ease, transform .3s ease; }
+  .status-col:hover{ box-shadow:var(--shadow); transform:translateY(-2px); }
+  .status-col-header{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:.92rem; transition:opacity .2s ease; }
+  .status-col-header:hover{ opacity:.85; }
+  .status-count{ margin-left:auto; background:rgba(0,0,0,.06); padding:2px 10px; border-radius:999px; font-size:.8rem; transition:transform .2s ease; }
+  html.dark .status-count{ background:rgba(255,255,255,.08); }
+  .student-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+  .student-row{ display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:rgba(0,0,0,.025); font-size:.85rem; animation:rowIn .3s ease backwards; transition:background .2s ease, transform .18s ease; }
+  .student-row:hover{ background:rgba(184,134,11,.08); transform:translateX(2px); }
+  @keyframes rowIn{ from{ opacity:0; transform:translateX(-6px); } to{ opacity:1; transform:translateX(0); } }
+  html.dark .student-row{ background:rgba(255,255,255,.04); }
+  .student-roll{ font-weight:700; font-variant-numeric:tabular-nums; opacity:.75; min-width:34px; }
+  .student-name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .student-time{ font-size:.72rem; color:var(--text-secondary); white-space:nowrap; }
+  .student-time em{ font-style:normal; opacity:.7; }
+  .empty-row, .empty-state{ color:var(--text-secondary); font-size:.85rem; padding:14px 4px; text-align:center; }
+
+  /* ============================= CLASSES TAB ============================= */
+  #classesTabContent > .inline-form{ margin-bottom:20px; }
+  #newClassName{ flex:1; min-width:220px; }
+  .class-card{ margin-bottom:14px; padding:0; overflow:hidden; }
+  .class-card-header{ display:flex; align-items:center; justify-content:space-between; padding:16px 18px; cursor:pointer; }
+  .class-card-title{ display:flex; align-items:center; gap:10px; font-weight:700; }
+  .chevron{ display:inline-block; transition:transform .25s ease; color:var(--text-secondary); }
+  .chevron.open{ transform:rotate(90deg); }
+  .class-count{ font-size:.76rem; font-weight:600; color:var(--text-secondary); background:rgba(184,134,11,.12); padding:2px 10px; border-radius:999px; }
+  .class-card-body{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .32s ease; border-top:1px solid transparent; }
+  .class-card-body.open{ grid-template-rows:1fr; border-top:1px solid var(--border); }
+  .ccb-inner{ overflow:hidden; min-height:0; padding:0 18px; }
+  .class-card-body.open .ccb-inner{ padding:16px 18px 18px; }
+  .add-student-form input{ flex:1; min-width:140px; }
+  .class-card .student-list{ margin-top:14px; max-height:260px; }
+  .class-card .student-row{ justify-content:space-between; }
+
+  .danger-zone{ margin-top:26px; padding:18px; border:1px dashed rgba(239,68,68,.4); border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .danger-zone p{ font-size:.82rem; color:var(--text-secondary); max-width:420px; }
+
+  /* ============================= RECORDS TAB ============================= */
+  .records-controls{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .records-controls select{ min-width:180px; }
+  #recordsSearchInput{ flex:1; min-width:180px; }
+  .records-summary{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .summary-pill{ padding:7px 14px; border-radius:999px; font-size:.8rem; font-weight:700; animation:fadeIn .35s ease backwards; transition:transform .18s ease; }
+  .summary-pill:hover{ transform:translateY(-2px); }
+  .table-wrap{ overflow-x:auto; padding:0; }
+  table{ width:100%; border-collapse:collapse; min-width:560px; }
+  thead th{ text-align:left; font-size:.76rem; text-transform:uppercase; letter-spacing:.04em; color:var(--text-secondary); padding:14px 18px; border-bottom:1px solid var(--border); }
+  tbody td{ padding:12px 18px; border-bottom:1px solid var(--border); font-size:.88rem; vertical-align:middle; }
+  tbody tr{ animation:fadeIn .3s ease backwards; transition:background .2s ease; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:rgba(184,134,11,.06); }
+  .status-select{ padding:7px 10px; font-size:.8rem; }
+  .tag-manual{ font-size:.66rem; color:var(--text-secondary); margin-left:6px; opacity:.8; }
+  .fine-waive-toggle{ display:flex; align-items:center; gap:4px; font-size:.66rem; color:var(--text-secondary); margin-top:4px; cursor:pointer; user-select:none; }
+  .fine-waive-toggle input{ margin:0; }
+
+  /* ============================= FACULTY TAB ============================= */
+  .faculty-top-card{ margin-bottom:20px; }
+  .faculty-top-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .faculty-top-row h3{ font-size:1rem; font-weight:800; }
+  .faculty-top-row p{ font-size:.8rem; color:var(--text-secondary); margin-top:4px; max-width:520px; line-height:1.5; }
+  #facultyWorkingDaysInput{ width:100px; }
+  .faculty-card{ margin-bottom:14px; }
+  .faculty-card-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .faculty-card-title{ font-weight:700; font-size:.98rem; }
+  .faculty-meta{ font-size:.8rem; color:var(--text-secondary); margin-top:2px; }
+  .faculty-mark-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:14px 0 2px; }
+  .faculty-mark-actions{ display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
+  .deduction-banner{ margin:12px 0 2px; padding:10px 14px; border-radius:var(--radius-sm); background:var(--danger-bg); color:var(--danger); font-size:.8rem; font-weight:600; line-height:1.5; animation:fadeIn .3s ease; }
+  .faculty-stats-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:14px; }
+  @media (max-width:760px){ .faculty-stats-grid{ grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:480px){ .faculty-stats-grid{ grid-template-columns:repeat(2,1fr); } }
+  .stat-mini{ background:rgba(0,0,0,.03); border-radius:var(--radius-sm); padding:10px 8px; text-align:center; transition:transform .18s ease; }
+  html.dark .stat-mini{ background:rgba(255,255,255,.05); }
+  .stat-mini:hover{ transform:translateY(-2px); }
+  .stat-mini-value{ font-weight:800; font-size:1.05rem; font-variant-numeric:tabular-nums; }
+  .stat-mini-label{ font-size:.66rem; color:var(--text-secondary); margin-top:2px; text-transform:uppercase; letter-spacing:.03em; }
+
+  /* ============================= FUND MANAGEMENT TAB ============================= */
+  .fund-card{ margin-bottom:20px; }
+  .fund-card h3{ font-size:1rem; font-weight:800; margin-bottom:4px; }
+  .fund-card > p{ font-size:.8rem; color:var(--text-secondary); margin-bottom:14px; }
+  .fund-card form.inline-form{ margin-bottom:16px; }
+  .fund-card form.inline-form input, .fund-card form.inline-form select{ flex:1; min-width:150px; }
+  .fee-charges-card{ margin-top:-4px; }
+  .fee-charges-card h4{ font-size:.85rem; font-weight:800; margin-bottom:10px; }
+  .fee-charges-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; margin-bottom:16px; }
+  .fee-charge-row{ display:flex; align-items:center; gap:8px; background:rgba(0,0,0,.03); border-radius:var(--radius-sm); padding:8px 10px; transition:opacity .15s ease; }
+  html.dark .fee-charge-row{ background:rgba(255,255,255,.05); }
+  .fee-charge-row.discount-row{ background:var(--danger-bg); }
+  .fee-charge-row label.fee-charge-label{ display:flex; align-items:center; gap:6px; font-size:.8rem; font-weight:600; flex:0 0 auto; cursor:pointer; user-select:none; }
+  .fee-charge-row label.fee-charge-label input[type="checkbox"]{ accent-color:var(--accent-2); }
+  .fee-charge-row input[type="text"]{ flex:1; min-width:0; padding:6px 8px; font-size:.82rem; }
+  .fee-charge-row input[type="text"]:disabled{ opacity:.45; }
+  .fee-charges-footer{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:space-between; padding-top:6px; border-top:1px dashed var(--border); }
+  .fee-charges-footer-fields{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .fee-grand-total{ font-size:1rem; font-weight:800; color:var(--total); background:var(--total-bg); padding:8px 16px; border-radius:999px; }
+  .fee-roll-tag{ font-size:.7rem; font-weight:700; opacity:.7; margin-left:6px; }
+  .fee-charge-breakdown{ font-size:.7rem; color:var(--text-secondary); }
+
+  /* ============================= SHARED BADGES / PILLS ============================= */
+  .badge, .pill{ display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; font-size:.78rem; font-weight:700; }
+  .success{ color:var(--success); background:var(--success-bg); }
+  .warning{ color:var(--warning); background:var(--warning-bg); }
+  .danger{  color:var(--danger);  background:var(--danger-bg); }
+  .muted{   color:var(--muted);   background:var(--muted-bg); }
+  .total{   color:var(--total);   background:var(--total-bg); }
+
+  /* ============================= TOASTS ============================= */
+  #toastContainer{ position:fixed; bottom:22px; right:22px; z-index:10000; display:flex; flex-direction:column; gap:10px; pointer-events:none; max-width:340px; }
+  .toast{
+    pointer-events:auto; display:flex; align-items:center; gap:10px; padding:13px 16px; border-radius:var(--radius-md);
+    background:var(--surface-solid); border:1px solid var(--border); box-shadow:var(--shadow); color:var(--text-primary);
+    font-size:.86rem; transform:translateX(120%) scale(.9); opacity:0; transition:transform .38s cubic-bezier(.34,1.56,.64,1), opacity .3s ease;
+  }
+  .toast.show{ transform:translateX(0) scale(1); opacity:1; }
+  .toast.hide{ transform:translateX(120%) scale(.9); opacity:0; }
+  .toast-icon{ font-size:1.05rem; animation:iconPop .4s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes iconPop{ from{ transform:scale(0); } to{ transform:scale(1); } }
+  .toast-msg{ flex:1; }
+  .toast-close{ background:none; border:none; color:var(--text-secondary); font-size:1rem; padding:0 2px; }
+  .toast-success .toast-icon{ color:var(--success); }
+  .toast-warning .toast-icon{ color:var(--warning); }
+  .toast-error .toast-icon{ color:var(--danger); }
+  .toast-info .toast-icon{ color:var(--total); }
+
+  /* ============================= CONFIRM MODAL ============================= */
+  #confirmModal{ position:fixed; inset:0; z-index:10001; display:flex; align-items:center; justify-content:center; background:rgba(15,23,42,.45); backdrop-filter:blur(4px); opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease; padding:20px; }
+  #confirmModal.active{ opacity:1; visibility:visible; }
+  .modal-box{ background:var(--surface-solid); border-radius:var(--radius-lg); padding:26px; max-width:420px; width:100%; box-shadow:var(--shadow); transform:scale(.9) translateY(10px); transition:transform .3s cubic-bezier(.34,1.56,.64,1); border:1px solid var(--border); }
+  #confirmModal.active .modal-box{ transform:scale(1) translateY(0); }
+  .modal-box h3{ font-size:1.05rem; margin-bottom:10px; }
+  .modal-box p{ font-size:.88rem; color:var(--text-secondary); line-height:1.5; margin-bottom:20px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; }
+
+  @media (max-width:600px){
+    header.app-header{ padding:14px 16px; }
+    .brand h1{ font-size:1.1rem; }
+    .app-shell{ padding:16px 12px 50px; }
+  }
+
+  /* ============================= LOCK SCREEN ============================= */
+  body.locked .app-shell, body.locked #loadingOverlay{ display:none; }
+  #lockScreen{
+    position:fixed; inset:0; z-index:10010; display:none; align-items:center; justify-content:center;
+    background:var(--bg-grad); padding:20px;
+  }
+  #lockScreen.show{ display:flex; }
+  .lock-card{ max-width:360px; width:100%; text-align:center; padding:34px 28px; animation:shellIn .45s cubic-bezier(.2,.8,.2,1); }
+  .lock-card.shake{ animation:lockShake .4s ease; }
+  @keyframes lockShake{ 10%,90%{ transform:translateX(-1px); } 20%,80%{ transform:translateX(2px); } 30%,50%,70%{ transform:translateX(-4px); } 40%,60%{ transform:translateX(4px); } }
+  .lock-logo{ font-size:2.3rem; margin-bottom:8px; }
+  .lock-card h2{ font-size:1.15rem; font-weight:800; margin-bottom:6px; }
+  .lock-card p{ font-size:.82rem; color:var(--text-secondary); margin-bottom:18px; line-height:1.5; }
+  #lockForm{ display:flex; flex-direction:column; gap:12px; }
+  #lockPasswordInput{ width:100%; text-align:center; }
+  .lock-remember{ display:flex; align-items:center; gap:8px; justify-content:center; font-size:.8rem; color:var(--text-secondary); cursor:pointer; user-select:none; }
+  .lock-remember input{ accent-color:var(--accent-2); }
+  .lock-error{ font-size:.8rem; color:var(--danger); min-height:16px; margin:0; }
+  #lockForm .btn{ width:100%; }
+  .security-zone{ margin-top:14px; }
+  .security-zone p{ font-size:.82rem; color:var(--text-secondary); max-width:420px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+</head>
+<body class="locked">
+
+  <!-- ============================= LOCK SCREEN ============================= -->
+  <div id="lockScreen" class="show">
+    <div class="lock-card glass-card">
+      <div class="lock-logo">🔒</div>
+      <h2>School Management Portal</h2>
+      <p>Enter the password to access the Attendance System.</p>
+      <form id="lockForm" autocomplete="on">
+        <input id="lockPasswordInput" type="password" placeholder="Password" autocomplete="current-password" required />
+        <label class="lock-remember"><input id="lockRememberCheckbox" type="checkbox" checked /> Remember me on this device</label>
+        <button type="submit" class="btn btn-primary">Unlock</button>
+        <p id="lockError" class="lock-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================= LOADING OVERLAY ============================= -->
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading School Management Portal…</div>
+  </div>
+
+  <div class="bg-blob one"></div>
+  <div class="bg-blob two"></div>
+  <div class="bg-blob three"></div>
+
+  <div class="app-shell">
+    <!-- ============================= HEADER ============================= -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true" style="display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:linear-gradient(135deg,var(--accent),var(--accent-2));">🎓</div>
+        <div>
+          <h1>School Management Portal</h1>
+          <p>Attendance, made simple.</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span id="headerClock">—</span>
+        <button id="desktopModeToggle" title="Switch to desktop view">🖥️</button>
+        <button id="darkModeToggle" title="Toggle dark mode">🌙</button>
+        <button id="lockAppBtn" title="Lock app">🔒</button>
+      </div>
+    </header>
+
+    <!-- ============================= NAV ============================= -->
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="mark">✅ Mark Attendance</button>
+      <button class="tab-btn" data-tab="classes">🏫 Classes</button>
+      <button class="tab-btn" data-tab="records">📊 Records</button>
+      <button class="tab-btn" data-tab="faculty">👩‍🏫 Faculty</button>
+      <button class="tab-btn" data-tab="fund">💰 Fund Management</button>
+    </nav>
+
+    <!-- ============================= TAB: MARK ATTENDANCE ============================= -->
+    <section id="tab-mark" class="tab-panel active">
+      <div class="mark-controls glass-card">
+        <form id="markForm" class="mark-form">
+          <input id="rollInput" type="text" placeholder="Enter student's or teacher's roll number and press Enter…" autocomplete="off" autofocus />
+          <button type="submit" class="btn btn-primary">Mark Attendance</button>
+        </form>
+        <div class="student-info-card" id="studentInfoCard"></div>
+        <div class="status-preview" id="statusPreview"></div>
+        <div class="field-group">
+          <label for="markClassSelect">Class (auto-detected from student roll number — change to browse another class; not used for teacher roll numbers)</label>
+          <select id="markClassSelect"></select>
+        </div>
+        <div class="mark-controls-footer">
+          <button id="markAllAbsentBtn" type="button" class="btn btn-outline-danger">Mark Remaining Absent</button>
+        </div>
+      </div>
+      <div class="mark-lists" id="markListsContainer"></div>
+    </section>
+
+    <!-- ============================= TAB: CLASSES ============================= -->
+    <section id="tab-classes" class="tab-panel">
+      <form id="addClassForm" class="inline-form glass-card">
+        <input id="newClassName" type="text" placeholder="New class name (e.g. Grade 10 - A)" autocomplete="off" />
+        <button type="submit" class="btn btn-primary">Add Class</button>
+      </form>
+      <div id="classesListContainer"></div>
+      <div class="danger-zone security-zone">
+        <p>Change the password required to access this attendance system on this device.</p>
+        <button id="changePasswordBtn" type="button" class="btn btn-outline">🔑 Change Password</button>
+      </div>
+      <div class="danger-zone">
+        <p>Reset everything — deletes all classes, students, and attendance history. This cannot be undone.</p>
+        <button id="resetAllBtn" type="button" class="btn btn-outline-danger">Reset All Data</button>
+      </div>
+    </section>
+
+    <!-- ============================= TAB: RECORDS ============================= -->
+    <section id="tab-records" class="tab-panel">
+      <div class="records-controls glass-card">
+        <select id="recordsClassSelect"></select>
+        <input type="date" id="recordsDateInput" />
+        <button id="recordsTodayBtn" type="button" class="btn btn-outline">Today</button>
+        <input type="text" id="recordsSearchInput" placeholder="Search roll or name…" />
+        <button id="copyNamesBtn" type="button" class="btn btn-outline">📋 Copy Names</button>
+      </div>
+      <div class="records-summary" id="recordsSummary"></div>
+      <div class="table-wrap glass-card">
+        <table id="recordsTable">
+          <thead>
+            <tr>
+              <th>Roll No.</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Time</th>
+              <th>Update</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================= TAB: FACULTY ============================= -->
+    <section id="tab-faculty" class="tab-panel">
+      <div class="glass-card faculty-top-card">
+        <div class="faculty-top-row">
+          <div>
+            <h3>👩‍🏫 Faculty Attendance &amp; Payroll</h3>
+            <p>Each late arrival deducts ¼ of a day's pay right away, so 4 late arrivals in a calendar month add up to exactly 1 day's pay deducted. Explicit absences deduct a full day's pay.</p>
+          </div>
+          <div class="field-group">
+            <label for="facultyWorkingDaysInput">Working days / month</label>
+            <input id="facultyWorkingDaysInput" type="text" inputmode="numeric" autocomplete="off" />
+          </div>
+        </div>
+        <form id="addFacultyForm" class="inline-form">
+          <input id="newFacultyRoll" type="text" placeholder="Roll number" autocomplete="off" required />
+          <input id="newFacultyName" type="text" placeholder="Teacher name" autocomplete="off" required />
+          <input id="newFacultyRole" type="text" placeholder="Subject / role" autocomplete="off" />
+          <input id="newFacultySalary" type="text" inputmode="decimal" placeholder="Monthly salary (PKR)" autocomplete="off" required />
+          <button type="submit" class="btn btn-primary">Add Faculty</button>
+        </form>
+        <p style="font-size:.78rem;color:var(--text-secondary);margin-top:8px;">Teachers can also be marked present/late/absent from the <strong>✅ Mark Attendance</strong> kiosk by entering their roll number, just like students.</p>
+      </div>
+
+      <div class="records-controls glass-card">
+        <div class="field-group">
+          <label for="facultyMonthInput">Viewing month</label>
+          <input type="month" id="facultyMonthInput" />
+        </div>
+        <button id="facultyThisMonthBtn" type="button" class="btn btn-outline">This Month</button>
+      </div>
+
+      <div id="facultyListContainer"></div>
+    </section>
+
+    <!-- ============================= TAB: FUND MANAGEMENT ============================= -->
+    <section id="tab-fund" class="tab-panel">
+      <div class="records-summary" id="fundSummary"></div>
+
+      <div class="glass-card fund-card">
+        <h3>🧾 Student Fee Records</h3>
+        <p>Track fees due and collected per student. Recurring fees automatically re-open as unpaid on the 1st of every month. Late fine policy: paid by the 10th — no fine; paid from the 11th–20th — a one-time fine; paid from the 21st onward — a further one-time fine on top. These are flat one-time penalties, not a daily charge.</p>
+        <div class="faculty-top-row" style="margin-bottom:14px;">
+          <div class="field-group" style="max-width:220px;">
+            <label for="lateFeeStage1Input">Fine for paying 11th–20th (PKR, one-time)</label>
+            <input id="lateFeeStage1Input" type="text" inputmode="decimal" autocomplete="off" />
+          </div>
+          <div class="field-group" style="max-width:220px;">
+            <label for="lateFeeStage2Input">Extra fine for paying 21st onward (PKR, one-time)</label>
+            <input id="lateFeeStage2Input" type="text" inputmode="decimal" autocomplete="off" />
+          </div>
+        </div>
+        <form id="addFeeForm">
+          <div class="inline-form" style="margin-bottom:6px;">
+            <input id="feeStudentName" type="text" placeholder="Name" autocomplete="off" required />
+            <input id="feeRollNumber" type="text" placeholder="Roll number (auto-fills student info below)" autocomplete="off" required />
+            <select id="feeClassSelect"></select>
+          </div>
+          <div id="feeRollLookupInfo" class="fee-roll-lookup-info" style="margin-bottom:16px;font-size:.8rem;color:var(--text-secondary);"></div>
+          <div class="fee-charges-card">
+            <h4>Charges — tick what applies to this student and enter the amount for each</h4>
+            <div class="fee-charges-grid" id="feeChargesGrid">
+              <div class="fee-charge-row">
+                <label class="fee-charge-label"><input id="feeChargeTuition" type="checkbox" /> Tuition</label>
+                <input id="feeAmountTuition" type="text" inputmode="decimal" placeholder="PKR" disabled />
+              </div>
+              <div class="fee-charge-row">
+                <label class="fee-charge-label"><input id="feeChargeAc" type="checkbox" /> A/C charges</label>
+                <input id="feeAmountAc" type="text" inputmode="decimal" placeholder="PKR" disabled />
+              </div>
+              <div class="fee-charge-row">
+                <label class="fee-charge-label"><input id="feeChargeArrears" type="checkbox" /> Arrears</label>
+                <input id="feeAmountArrears" type="text" inputmode="decimal" placeholder="PKR" disabled />
+              </div>
+              <div class="fee-charge-row">
+                <label class="fee-charge-label"><input id="feeChargeSports" type="checkbox" /> Sports</label>
+                <input id="feeAmountSports" type="text" inputmode="decimal" placeholder="PKR" disabled />
+              </div>
+              <div class="fee-charge-row">
+                <label class="fee-charge-label"><input id="feeChargeMusic" type="checkbox" /> Music</label>
+                <input id="feeAmountMusic" type="text" inputmode="decimal" placeholder="PKR" disabled />
+              </div>
+              <div class="fee-charge-row">
+                <label class="fee-charge-label"><input id="feeChargeFines" type="checkbox" /> Fines</label>
+                <input id="feeAmountFines" type="text" inputmode="decimal" placeholder="PKR" disabled />
+              </div>
+              <div class="fee-charge-row discount-row">
+                <label class="fee-charge-label"><input id="feeChargeDiscount" type="checkbox" /> Discount</label>
+                <input id="feeAmountDiscount" type="text" inputmode="decimal" placeholder="PKR" disabled />
+              </div>
+            </div>
+            <div class="fee-charges-footer">
+              <div class="fee-charges-footer-fields">
+                <div class="field-group" style="max-width:200px;">
+                  <label for="feeAmountPaid">Paid now (PKR, optional)</label>
+                  <input id="feeAmountPaid" type="text" inputmode="decimal" placeholder="PKR" autocomplete="off" />
+                </div>
+                <label class="lock-remember" style="justify-content:flex-start;"><input id="feeRecurringCheckbox" type="checkbox" /> Recurring monthly fee</label>
+              </div>
+              <div class="fee-grand-total" id="feeGrandTotalDisplay">Grand Total: PKR 0</div>
+              <button type="submit" class="btn btn-primary">Add Fee Record</button>
+            </div>
+          </div>
+        </form>
+        <div class="table-wrap">
+          <table id="feeRecordsTable">
+            <thead>
+              <tr><th>Student</th><th>Roll</th><th>Class</th><th>Charges</th><th>Penalties</th><th>Period</th><th>Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody id="feeRecordsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="glass-card fund-card">
+        <h3>💰 Fund Transactions</h3>
+        <p>General income &amp; expenses for the school fund — donations, maintenance costs, and automatic salary-deduction credits.</p>
+        <form id="addFundTxnForm" class="inline-form">
+          <select id="fundTxnType">
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+          <input id="fundTxnCategory" type="text" placeholder="Category (e.g. Donation, Maintenance)" autocomplete="off" required />
+          <input id="fundTxnAmount" type="text" inputmode="decimal" placeholder="Amount (PKR)" autocomplete="off" required />
+          <input id="fundTxnDesc" type="text" placeholder="Description (optional)" autocomplete="off" />
+          <button type="submit" class="btn btn-secondary">Add Transaction</button>
+        </form>
+        <div class="table-wrap">
+          <table id="fundTxnTable">
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr>
+            </thead>
+            <tbody id="fundTxnTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================= TOASTS ============================= -->
+  <div id="toastContainer" aria-live="polite"></div>
+
+  <!-- ============================= CONFIRM MODAL ============================= -->
+  <div id="confirmModal">
+    <div class="modal-box">
+      <h3>Are you sure?</h3>
+      <p id="confirmMessage">This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="confirmCancelBtn" type="button" class="btn btn-outline">Cancel</button>
+        <button id="confirmOkBtn" type="button" class="btn btn-outline-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     SECTION 1: CONSTANTS & STATE
+  ============================================================ */
+  const STORAGE_KEY = "classroll_attendance_state_v1"; // local cache / offline fallback only
+  const LATE_CUTOFF_SECONDS = 8 * 3600; // 08:00:00 — anyone at/after this is LATE
+  const STATUS_COLOR = { present:"success", late:"warning", absent:"danger", unmarked:"muted" };
+
+  /* ----- Cloud storage config (Supabase) ----- */
+  const SUPABASE_URL = "https://vpujtqytmcfczykiyjga.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwdWp0cXl0bWNmY3p5a2l5amdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MDk2MjEsImV4cCI6MjEwMjE4NTYyMX0.k34ESvgPOEqBdFGRhx4wVajqSkHFwfjZ-wAEVVC9_GE";
+  const CLOUD_ROW_ID = "school_portal_main"; // single shared record holding the whole app state
+  let cloud = null;
+  try{
+    if(window.supabase && typeof window.supabase.createClient === "function"){
+      cloud = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }else{
+      console.warn("Attendance Systems: Supabase library did not load — running in local-only mode.");
+    }
+  }catch(err){
+    console.warn("Attendance Systems: could not initialize cloud client — running in local-only mode.", err);
+  }
+  let cloudSaveTimer = null;
+  // Tracks this device's own in-flight/just-sent `updated_at` stamps so the
+  // realtime listener can tell "this is my own save echoing back" apart from
+  // "another device just changed something" without relying on a single
+  // boolean flag (which breaks if two saves ever overlap in flight).
+  const pendingEchoTimestamps = new Set();
+  // Serializes cloud pushes: if a save is still in flight (slow network) when
+  // the next debounced save fires, this chains it to run *after* the first
+  // completes instead of letting two fetch-merge-upsert calls race each other.
+  let pushChain = Promise.resolve();
+  let lastPushFailed = false;
+
+  // ---- Lightweight polling state (silent updated_at check every 5s) ----
+  let lastKnownRemoteUpdatedAt = null;  // last updated_at we've seen/applied
+  let pollTimer = null;                 // handle for the poll setTimeout loop
+  let pollInFlight = false;             // guards against overlapping poll requests
+  let isCloudSaving = false;            // true while pushStateToCloud is in flight
+  const POLL_INTERVAL_MS = 5000;        // fixed, no jitter
+  let pollBackoffMs = POLL_INTERVAL_MS; // grows on failure, resets on success
+  const POLL_BACKOFF_MAX_MS = 60000;
+
+  let state = defaultState(); // populated for real inside init() via loadState()
+
+  const ui = {
+    activeTab: "mark",
+    markClassId: null,
+    recordsClassId: null,
+    recordsDate: null,
+    recordsSearch: "",
+    expandedClasses: new Set(),
+    collapsedStatusCols: new Set(),
+    editingClassId: null,
+    facultyMonth: null
+  };
+
+  let els = {}; // cached DOM element references, populated on init
+
+  /* ============================================================
+     SECTION 1B: PASSWORD / ACCESS CONTROL
+     Client-side gate: everything lives in this file, so this is a
+     deterrent for casual access on a shared device, not a secure
+     server-side auth system.
+  ============================================================ */
+  const PW_HASH_KEY = "schoolPortal.pwHash.v1";
+  const PW_UNLOCK_KEY = "schoolPortal.unlocked.v1";      // localStorage — "remember me" persistence
+  const PW_SESSION_KEY = "schoolPortal.sessionUnlocked.v1"; // sessionStorage — unlocked for this tab/session
+  const DEFAULT_PASSWORD = "2026";
+
+  function simpleHash(str){
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for(let i = 0; i < str.length; i++){
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+  }
+  function getStoredPasswordHash(){
+    try{ return localStorage.getItem(PW_HASH_KEY); }catch(e){ return null; }
+  }
+  function checkPassword(pw){
+    const target = getStoredPasswordHash() || simpleHash(DEFAULT_PASSWORD);
+    return simpleHash(String(pw || "")) === target;
+  }
+  function setPassword(pw){
+    try{ localStorage.setItem(PW_HASH_KEY, simpleHash(String(pw))); }catch(e){}
+  }
+  function isUnlocked(){
+    try{
+      if(sessionStorage.getItem(PW_SESSION_KEY) === "1") return true;
+      if(localStorage.getItem(PW_UNLOCK_KEY) === "1") return true;
+    }catch(e){}
+    return false;
+  }
+  function setUnlocked(remember){
+    try{
+      sessionStorage.setItem(PW_SESSION_KEY, "1");
+      if(remember) localStorage.setItem(PW_UNLOCK_KEY, "1");
+      else localStorage.removeItem(PW_UNLOCK_KEY);
+    }catch(e){}
+  }
+  function handleLockAppClick(){
+    try{
+      sessionStorage.removeItem(PW_SESSION_KEY);
+      localStorage.removeItem(PW_UNLOCK_KEY);
+    }catch(e){}
+    location.reload();
+  }
+  function handleChangePassword(){
+    const current = window.prompt("Enter your current password:");
+    if(current === null) return;
+    if(!checkPassword(current)){
+      showToast("Current password is incorrect.", "error");
+      return;
+    }
+    const next = window.prompt("Enter a new password (minimum 4 characters):");
+    if(next === null) return;
+    if(!next || next.length < 4){
+      showToast("New password must be at least 4 characters.", "error");
+      return;
+    }
+    const confirmNext = window.prompt("Confirm the new password:");
+    if(confirmNext === null) return;
+    if(confirmNext !== next){
+      showToast("Passwords do not match — password was not changed.", "error");
+      return;
+    }
+    setPassword(next);
+    showToast("Password updated successfully.", "success");
+  }
+
+  function handleLockFormSubmit(e){
+    e.preventDefault();
+    const input = document.getElementById("lockPasswordInput");
+    const remember = document.getElementById("lockRememberCheckbox");
+    const errorEl = document.getElementById("lockError");
+    const pw = input ? input.value : "";
+    if(checkPassword(pw)){
+      setUnlocked(!!(remember && remember.checked));
+      document.body.classList.remove("locked");
+      const screen = document.getElementById("lockScreen");
+      if(screen) screen.classList.remove("show");
+      startApp();
+    }else{
+      if(errorEl) errorEl.textContent = "Incorrect password. Please try again.";
+      if(input){ input.value = ""; input.focus(); }
+      const card = document.querySelector(".lock-card");
+      if(card){
+        card.classList.remove("shake");
+        void card.offsetWidth; // restart animation
+        card.classList.add("shake");
+      }
+    }
+  }
+
+  function showLockScreen(){
+    document.body.classList.add("locked");
+    const screen = document.getElementById("lockScreen");
+    if(screen) screen.classList.add("show");
+    const form = document.getElementById("lockForm");
+    if(form) form.addEventListener("submit", handleLockFormSubmit);
+    const input = document.getElementById("lockPasswordInput");
+    if(input) setTimeout(()=>input.focus(), 60);
+  }
+
+  function startApp(){
+    init().catch(err=>{
+      console.warn("Attendance Systems: fatal init error, forcing UI visible.", err);
+      if(els.loadingOverlay) els.loadingOverlay.classList.add("hide");
+    });
+  }
+  let audioCtx = null;
+
+  /* ============================================================
+     SECTION 2: PERSISTENCE HELPERS
+  ============================================================ */
+  // Tombstones record *when* something was deleted (per class, per student,
+  // per faculty member, per fund transaction, per attendance entry). Without
+  // these, a delete on one device is just an omission — as soon as another
+  // device (which never saw the delete) syncs its own copy back up, the
+  // union-based merge below would treat the still-present record as a
+  // legitimate addition and silently resurrect it. Every delete site writes
+  // a tombstone; every merge prunes anything covered by one.
+  function defaultTombstones(){
+    return { classes:{}, students:{}, faculty:{}, feeRecords:{}, fundTransactions:{}, attendance:{} };
+  }
+  function normalizeTombstones(parsed){
+    const t = (parsed && typeof parsed === "object") ? parsed : {};
+    const out = {};
+    Object.keys(defaultTombstones()).forEach(k=>{
+      out[k] = (t[k] && typeof t[k] === "object") ? t[k] : {};
+    });
+    return out;
+  }
+  function defaultState(){
+    return {
+      classes: [], attendance: {}, settings: {},
+      faculty: [], facultyAttendance: {},
+      feeRecords: [], fundTransactions: [],
+      tombstones: defaultTombstones()
+    };
+  }
+
+  function normalizeState(parsed){
+    if(!parsed || typeof parsed !== "object") return defaultState();
+    return {
+      classes: Array.isArray(parsed.classes) ? parsed.classes : [],
+      attendance: (parsed.attendance && typeof parsed.attendance === "object") ? parsed.attendance : {},
+      settings: (parsed.settings && typeof parsed.settings === "object") ? parsed.settings : {},
+      faculty: Array.isArray(parsed.faculty) ? parsed.faculty : [],
+      facultyAttendance: (parsed.facultyAttendance && typeof parsed.facultyAttendance === "object") ? parsed.facultyAttendance : {},
+      feeRecords: Array.isArray(parsed.feeRecords) ? parsed.feeRecords : [],
+      fundTransactions: Array.isArray(parsed.fundTransactions) ? parsed.fundTransactions : [],
+      tombstones: normalizeTombstones(parsed.tombstones)
+    };
+  }
+
+  /* ----- Multi-device merge helpers -----
+     The cloud row holds one JSON blob for the whole app. Two devices editing
+     around the same time used to just overwrite each other's blob outright,
+     silently dropping whichever device's edit lost the race (and, for
+     payroll, could double-count a late-arrival deduction if both devices
+     computed it before seeing the other's write). Instead of a blind
+     overwrite, every push now re-fetches the current cloud row and merges it
+     with the local edit field-by-field, so concurrent changes on different
+     records combine instead of clobbering one another. */
+  function isAttendanceRecord(v){
+    return !!(v && typeof v === "object" && "status" in v);
+  }
+  // Deep-merges nested date/roll dictionaries (attendance, facultyAttendance).
+  // At the leaves (individual attendance records) the one with the newer
+  // `timestamp` wins; everywhere else, keys from both sides are combined.
+  function mergeAttendanceTree(remoteNode, localNode){
+    if(isAttendanceRecord(remoteNode) || isAttendanceRecord(localNode)){
+      if(!remoteNode) return localNode;
+      if(!localNode) return remoteNode;
+      const rt = Number(remoteNode.timestamp) || 0;
+      const lt = Number(localNode.timestamp) || 0;
+      return rt > lt ? remoteNode : localNode;
+    }
+    const remote = (remoteNode && typeof remoteNode === "object") ? remoteNode : {};
+    const local = (localNode && typeof localNode === "object") ? localNode : {};
+    const out = {};
+    new Set([...Object.keys(remote), ...Object.keys(local)]).forEach(k=>{
+      out[k] = mergeAttendanceTree(remote[k], local[k]);
+    });
+    return out;
+  }
+  // Merges two arrays of records keyed by `id`: items only on one side are
+  // kept, items on both sides are combined via `mergeItem` (default: the
+  // local copy wins, since it reflects this device's most recent edit).
+  function mergeArraysById(remoteArr, localArr, mergeItem){
+    remoteArr = Array.isArray(remoteArr) ? remoteArr : [];
+    localArr = Array.isArray(localArr) ? localArr : [];
+    const map = new Map();
+    remoteArr.forEach(item=>{ if(item && item.id != null) map.set(item.id, item); });
+    localArr.forEach(item=>{
+      if(!item || item.id == null) return;
+      const existing = map.get(item.id);
+      map.set(item.id, existing ? (mergeItem ? mergeItem(existing, item) : item) : item);
+    });
+    return Array.from(map.values());
+  }
+  function mergeClassItem(remoteClass, localClass){
+    const merged = { ...remoteClass, ...localClass };
+    const remoteStudents = Array.isArray(remoteClass.students) ? remoteClass.students : [];
+    const localStudents = Array.isArray(localClass.students) ? localClass.students : [];
+    const map = new Map();
+    remoteStudents.forEach(s=>{ if(s && s.roll != null) map.set(s.roll, s); });
+    localStudents.forEach(s=>{ if(s && s.roll != null) map.set(s.roll, s); });
+    merged.students = Array.from(map.values());
+    return merged;
+  }
+  // A fee record's id is deterministic per student/month (see feeRecordIdFor),
+  // so two devices billing the same student in the same billing period always
+  // land on the same id and collapse into one row here instead of two. Since
+  // that means a "duplicate" merge can be two genuinely independent edits to
+  // the same bill (e.g. one device recorded a payment, the other applied a
+  // late-fee stage), combine the fields rather than letting either side's
+  // copy blindly clobber the other's.
+  function mergeFeeRecordItem(remoteRec, localRec){
+    const merged = { ...remoteRec, ...localRec };
+    merged.amountPaid = Math.max(Number(remoteRec.amountPaid) || 0, Number(localRec.amountPaid) || 0);
+    merged.lateFeeStage = Math.max(Number(remoteRec.lateFeeStage) || 0, Number(localRec.lateFeeStage) || 0);
+    merged.lateFeeTotal = Math.max(Number(remoteRec.lateFeeTotal) || 0, Number(localRec.lateFeeTotal) || 0);
+    // The waive checkbox is a toggle, so whichever side flipped it most
+    // recently wins (rather than an OR, which could never be un-waived).
+    const rWaivedAt = Number(remoteRec.lateFeeWaivedAt) || 0;
+    const lWaivedAt = Number(localRec.lateFeeWaivedAt) || 0;
+    if(rWaivedAt || lWaivedAt){
+      merged.lateFeeWaived = lWaivedAt >= rWaivedAt ? !!localRec.lateFeeWaived : !!remoteRec.lateFeeWaived;
+      merged.lateFeeWaivedAt = Math.max(rWaivedAt, lWaivedAt);
+    }
+    return merged;
+  }
+  // Tombstone-map merge: a key is deleted the moment either side recorded a
+  // deletion for it, so the merged timestamp is just the max of the two.
+  function mergeTombstoneMap(remoteMap, localMap){
+    remoteMap = (remoteMap && typeof remoteMap === "object") ? remoteMap : {};
+    localMap = (localMap && typeof localMap === "object") ? localMap : {};
+    const out = { ...remoteMap };
+    Object.keys(localMap).forEach(k=>{
+      out[k] = Math.max(Number(remoteMap[k]) || 0, Number(localMap[k]) || 0);
+    });
+    return out;
+  }
+  function mergeTombstones(remoteT, localT){
+    remoteT = normalizeTombstones(remoteT);
+    localT = normalizeTombstones(localT);
+    const out = {};
+    Object.keys(defaultTombstones()).forEach(k=>{
+      out[k] = mergeTombstoneMap(remoteT[k], localT[k]);
+    });
+    return out;
+  }
+  // Drops any array item whose id has a tombstone — this is what actually
+  // makes a delete "stick" no matter how many devices union their copies
+  // back together afterward.
+  function pruneTombstonedById(arr, tombMap){
+    if(!Array.isArray(arr)) return [];
+    tombMap = tombMap || {};
+    return arr.filter(item => !(item && item.id != null && tombMap[item.id] != null));
+  }
+  // Classes need two passes: drop tombstoned classes outright, then drop
+  // tombstoned students out of whatever classes remain. A student can only
+  // be resurrected if they were (re)added — with a fresh addedAt — after the
+  // deletion; legacy students with no addedAt are treated conservatively as
+  // pre-dating the delete.
+  function pruneTombstonedClasses(classes, tombstones){
+    return pruneTombstonedById(classes, tombstones.classes).map(c=>{
+      if(!Array.isArray(c.students)) return c;
+      const students = c.students.filter(s=>{
+        if(!s || s.roll == null) return true;
+        const ts = tombstones.students[c.id + "::" + s.roll];
+        if(ts == null) return true;
+        return (Number(s.addedAt) || 0) > ts;
+      });
+      return { ...c, students };
+    });
+  }
+  // Attendance leaves use the same last-write-wins timestamp already used to
+  // resolve conflicting marks: only prune the leaf if it's no newer than the
+  // deletion, so re-marking attendance after a reset isn't wiped out again.
+  function pruneTombstonedAttendanceLeaves(tree, tombMap){
+    Object.keys(tombMap || {}).forEach(key=>{
+      const ts = tombMap[key];
+      const parts = key.split("::");
+      if(parts.length !== 3) return;
+      const [classId, dateKey, roll] = parts;
+      const rec = tree[classId] && tree[classId][dateKey] && tree[classId][dateKey][roll];
+      if(rec && (Number(rec.timestamp) || 0) <= ts){
+        delete tree[classId][dateKey][roll];
+      }
+    });
+    return tree;
+  }
+  // Whole subtrees (all attendance under a deleted class, or all attendance
+  // under a deleted faculty member) get dropped entirely once their owner id
+  // is tombstoned — a per-leaf timestamp check doesn't apply since the owner
+  // itself no longer exists to re-mark against.
+  function pruneTombstonedSubtrees(tree, ownerTombMap){
+    Object.keys(ownerTombMap || {}).forEach(ownerId=>{
+      if(tree[ownerId]) delete tree[ownerId];
+    });
+    return tree;
+  }
+  function mergeStates(remote, local){
+    remote = normalizeState(remote);
+    local = normalizeState(local);
+    const tombstones = mergeTombstones(remote.tombstones, local.tombstones);
+
+    const classes = pruneTombstonedClasses(
+      mergeArraysById(remote.classes, local.classes, mergeClassItem), tombstones
+    );
+    let attendance = mergeAttendanceTree(remote.attendance, local.attendance);
+    attendance = pruneTombstonedAttendanceLeaves(attendance, tombstones.attendance);
+    attendance = pruneTombstonedSubtrees(attendance, tombstones.classes);
+
+    const faculty = pruneTombstonedById(mergeArraysById(remote.faculty, local.faculty), tombstones.faculty);
+    let facultyAttendance = mergeAttendanceTree(remote.facultyAttendance, local.facultyAttendance);
+    facultyAttendance = pruneTombstonedSubtrees(facultyAttendance, tombstones.faculty);
+
+    const feeRecords = pruneTombstonedById(
+      mergeArraysById(remote.feeRecords, local.feeRecords, mergeFeeRecordItem), tombstones.feeRecords
+    );
+    const fundTransactions = pruneTombstonedById(
+      mergeArraysById(remote.fundTransactions, local.fundTransactions), tombstones.fundTransactions
+    );
+
+    return {
+      classes, attendance,
+      settings: { ...remote.settings, ...local.settings },
+      faculty, facultyAttendance,
+      feeRecords, fundTransactions,
+      tombstones
+    };
+  }
+  // Snapshots every id currently in state into fresh tombstones, stamped
+  // "now" — used by "Reset everything" so a full wipe sticks the same way an
+  // individual delete does, instead of the old data quietly reappearing the
+  // next time another device (which never saw the reset) syncs back up.
+  function buildFullWipeTombstones(prevState, ts){
+    ts = ts || Date.now();
+    const t = defaultTombstones();
+    (prevState.classes || []).forEach(c=>{
+      if(!c || c.id == null) return;
+      t.classes[c.id] = ts;
+      (c.students || []).forEach(s=>{
+        if(s && s.roll != null) t.students[c.id + "::" + s.roll] = ts;
+      });
+    });
+    (prevState.faculty || []).forEach(f=>{ if(f && f.id != null) t.faculty[f.id] = ts; });
+    (prevState.feeRecords || []).forEach(r=>{ if(r && r.id != null) t.feeRecords[r.id] = ts; });
+    (prevState.fundTransactions || []).forEach(tx=>{ if(tx && tx.id != null) t.fundTransactions[tx.id] = ts; });
+    Object.keys(prevState.attendance || {}).forEach(classId=>{
+      Object.keys(prevState.attendance[classId] || {}).forEach(dateKey=>{
+        Object.keys(prevState.attendance[classId][dateKey] || {}).forEach(roll=>{
+          t.attendance[classId + "::" + dateKey + "::" + roll] = ts;
+        });
+      });
+    });
+    return t;
+  }
+
+  function loadLocalCache(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? normalizeState(JSON.parse(raw)) : defaultState();
+    }catch(err){
+      return defaultState();
+    }
+  }
+
+  // Loads the shared state from Supabase. Falls back to the last local cache
+  // (and finally a blank state) if the network/cloud is unavailable, so the
+  // app still works offline — it just won't be in sync with other devices.
+  async function loadState(){
+    if(!cloud){
+      return loadLocalCache();
+    }
+    try{
+      const { data, error } = await cloud
+        .from("app_state")
+        .select("data")
+        .eq("id", CLOUD_ROW_ID)
+        .maybeSingle();
+      if(error) throw error;
+
+      if(!data){
+        // First run ever: seed the cloud row from whatever's cached locally (or blank).
+        const seed = loadLocalCache();
+        await cloud.from("app_state").upsert({ id: CLOUD_ROW_ID, data: seed, updated_at: new Date().toISOString() });
+        return seed;
+      }
+      const fresh = normalizeState(data.data);
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh)); }catch(e){}
+      return fresh;
+    }catch(err){
+      console.warn("Attendance Systems: could not reach cloud storage, using local cache.", err);
+      showToast("Offline — showing last saved data on this device.", "error");
+      return loadLocalCache();
+    }
+  }
+
+  function sanitizeState(){
+    state.classes.forEach(c=>{
+      if(!Array.isArray(c.students)) c.students = [];
+    });
+    if(!Array.isArray(state.faculty)) state.faculty = [];
+    if(!state.facultyAttendance || typeof state.facultyAttendance !== "object") state.facultyAttendance = {};
+    state.faculty.forEach(f=>{
+      if(f.roll == null) f.roll = "";
+    });
+    if(!Array.isArray(state.feeRecords)) state.feeRecords = [];
+    if(!Array.isArray(state.fundTransactions)) state.fundTransactions = [];
+    state.feeRecords.forEach(r=>{
+      if(!r.charges || typeof r.charges !== "object"){
+        // Migrate legacy single-category records into the new charges breakdown.
+        r.charges = { tuition:0, ac:0, arrears:0, sports:0, music:0, fines:0 };
+        const legacyAmount = Number(r.baseAmountDue != null ? r.baseAmountDue : r.amountDue) || 0;
+        r.charges.tuition = legacyAmount;
+      }else{
+        ["tuition","ac","arrears","sports","music","fines"].forEach(k=>{
+          if(r.charges[k] == null || !Number.isFinite(Number(r.charges[k]))) r.charges[k] = 0;
+        });
+      }
+      if(r.discount == null || !Number.isFinite(Number(r.discount))) r.discount = 0;
+      if(r.roll == null) r.roll = "";
+      if(r.baseAmountDue == null) r.baseAmountDue = Number(r.amountDue) || 0;
+      if(!r.period) r.period = monthKeyOf(r.date || todayKey());
+      if(r.lateFeeTotal == null) r.lateFeeTotal = 0;
+      if(r.lateFeeStage == null) r.lateFeeStage = 0;
+      if(r.lateFeeLastAppliedDate === undefined) r.lateFeeLastAppliedDate = null;
+      if(r.lateFeeWaived == null) r.lateFeeWaived = false;
+      if(r.lateFeeWaivedAt == null) r.lateFeeWaivedAt = 0;
+      if(r.recurring == null) r.recurring = false;
+      if(r.recurring && !r.seriesId) r.seriesId = r.id;
+    });
+  }
+
+  // Saves instantly to a local cache (so the UI never feels slow / never loses
+  // data if you close the tab), then pushes to Supabase in the background,
+  // debounced so rapid-fire edits (e.g. marking a whole class) don't spam requests.
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(err){
+      console.warn("Attendance Systems: failed to save local cache.", err);
+    }
+    if(cloudSaveTimer) clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(queuePushToCloud, 400);
+  }
+
+  // Chains onto pushChain instead of calling pushStateToCloud directly, so an
+  // in-flight push always finishes (and its merge result is visible) before
+  // the next one starts — this is what prevents two overlapping saves from
+  // racing each other and one clobbering the other's merge.
+  function queuePushToCloud(){
+    pushChain = pushChain.then(pushStateToCloud).catch(()=>{});
+  }
+
+  async function pushStateToCloud(){
+    if(!cloud) return;
+    isCloudSaving = true;
+    try{
+      // Re-fetch the current cloud row and merge it with our local edit before
+      // writing, instead of blindly overwriting whatever another device may
+      // have saved in the meantime. This is the fix for cross-device data loss
+      // (and the payroll double/lost-deduction knock-on effect it caused).
+      let toPush = state;
+      try{
+        const { data: latest, error: fetchErr } = await cloud
+          .from("app_state")
+          .select("data")
+          .eq("id", CLOUD_ROW_ID)
+          .maybeSingle();
+        if(!fetchErr && latest && latest.data){
+          toPush = mergeStates(latest.data, state);
+          state = toPush;
+          try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+        }
+      }catch(fetchErr){
+        console.warn("Attendance Systems: could not fetch latest cloud data before saving — pushing local copy as-is.", fetchErr);
+      }
+      const stamp = new Date().toISOString();
+      pendingEchoTimestamps.add(stamp);
+      const { error } = await cloud
+        .from("app_state")
+        .upsert({ id: CLOUD_ROW_ID, data: toPush, updated_at: stamp });
+      if(error) throw error;
+      lastPushFailed = false;
+    }catch(err){
+      lastPushFailed = true;
+      console.warn("Attendance Systems: failed to sync to cloud.", err);
+      showToast("Could not sync to cloud — check your connection.", "error");
+    }finally{
+      isCloudSaving = false;
+    }
+  }
+
+  // Live sync: when another device/tab saves a change, pick it up here without
+  // needing a manual refresh.
+  function subscribeToCloudUpdates(){
+    if(!cloud) return;
+    cloud
+      .channel("app_state_sync")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "app_state", filter: `id=eq.${CLOUD_ROW_ID}` },
+        (payload)=>{
+          const incomingStamp = payload.new && payload.new.updated_at;
+          if(incomingStamp && pendingEchoTimestamps.has(incomingStamp)){
+            // This is our own write echoing back through realtime, not a
+            // change from another device — nothing to merge or re-render.
+            pendingEchoTimestamps.delete(incomingStamp);
+            return;
+          }
+          const incoming = payload.new && payload.new.data;
+          if(!incoming) return;
+          // Merge rather than replace: if this device has a local edit that
+          // hasn't been pushed yet (still sitting in the debounce window),
+          // a plain replace here would silently discard it.
+          state = mergeStates(incoming, state);
+          sanitizeState();
+          try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+          renderClassSelects();
+          renderClassesTab();
+          renderMarkLists();
+          renderRecordsTable();
+          renderFacultyTab();
+          renderFundTab();
+          updateStatusPreview();
+          showToast("Updated with changes from another device.", "success");
+        }
+      )
+      .subscribe();
+
+    // Offline safety net: if a push failed (or the tab was offline while
+    // edits were made), retry once connectivity actually returns instead of
+    // silently leaving local-only changes stranded until the next edit.
+    window.addEventListener("online", ()=>{
+      if(cloud) queuePushToCloud();
+    });
+    setInterval(()=>{
+      if(cloud && lastPushFailed && navigator.onLine !== false) queuePushToCloud();
+    }, 20000);
+
+    // ---- Silent lightweight polling ----
+    document.addEventListener("visibilitychange", ()=>{
+      if(document.hidden){
+        stopPollTimer();
+      }else{
+        schedulePoll(0); // resume immediately on returning to the tab
+      }
+    });
+    if(!document.hidden) startPolling();
+  }
+
+  function stopPollTimer(){
+    if(pollTimer){
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  function schedulePoll(delay){
+    stopPollTimer();
+    pollTimer = setTimeout(pollSharedStateOnce, delay);
+  }
+
+  function startPolling(){
+    if(pollTimer || pollInFlight) return; // prevent duplicate loops
+    schedulePoll(POLL_INTERVAL_MS);
+  }
+
+  function getChangedSections(before, after){
+    const keys = ["classes","attendance","settings","faculty","facultyAttendance","feeRecords","fundTransactions"];
+    const changed = new Set();
+    keys.forEach(k=>{
+      try{
+        if(JSON.stringify(before[k]) !== JSON.stringify(after[k])) changed.add(k);
+      }catch(e){
+        changed.add(k);
+      }
+    });
+    return changed;
+  }
+
+  function applyChangedSections(changed){
+    if(changed.has("classes") || changed.has("attendance")){
+      renderClassSelects();
+      renderClassesTab();
+      renderMarkLists();
+      renderRecordsTable();
+    }
+    if(changed.has("faculty") || changed.has("facultyAttendance")){
+      renderFacultyTab();
+    }
+    if(changed.has("feeRecords") || changed.has("fundTransactions")){
+      renderFundTab();
+    }
+    if(changed.has("classes") || changed.has("attendance") || changed.has("faculty") || changed.has("facultyAttendance")){
+      updateStatusPreview();
+    }
+  }
+
+  async function pollSharedStateOnce(){
+    pollTimer = null;
+    if(!cloud){ schedulePoll(POLL_INTERVAL_MS); return; }
+    if(pollInFlight) return; // skip this cycle; the in-flight one will reschedule
+    if(document.hidden) return; // paused while hidden; visibilitychange resumes it
+    if(isCloudSaving){ schedulePoll(POLL_INTERVAL_MS); return; }
+
+    pollInFlight = true;
+    try{
+      // Step 1: lightweight check — updated_at only, no payload.
+      const { data, error } = await cloud
+        .from("app_state")
+        .select("updated_at")
+        .eq("id", CLOUD_ROW_ID)
+        .maybeSingle();
+      if(error) throw error;
+
+      const remoteStamp = data && data.updated_at;
+      if(!remoteStamp){ pollBackoffMs = POLL_INTERVAL_MS; return; }
+
+      if(lastKnownRemoteUpdatedAt === null){
+        lastKnownRemoteUpdatedAt = remoteStamp;
+        pollBackoffMs = POLL_INTERVAL_MS;
+        return;
+      }
+      if(remoteStamp === lastKnownRemoteUpdatedAt){
+        // Step 3: unchanged — stop immediately, no fetch/merge/render.
+        pollBackoffMs = POLL_INTERVAL_MS;
+        return;
+      }
+      if(pendingEchoTimestamps.has(remoteStamp)){
+        pendingEchoTimestamps.delete(remoteStamp);
+        lastKnownRemoteUpdatedAt = remoteStamp;
+        pollBackoffMs = POLL_INTERVAL_MS;
+        return;
+      }
+
+      // Step 4: real remote change — fetch full state, merge, apply only diffs.
+      const { data: full, error: fullErr } = await cloud
+        .from("app_state")
+        .select("data, updated_at")
+        .eq("id", CLOUD_ROW_ID)
+        .maybeSingle();
+      if(fullErr) throw fullErr;
+      if(!full || !full.data){ pollBackoffMs = POLL_INTERVAL_MS; return; }
+
+      const before = state;
+      state = mergeStates(full.data, state);
+      sanitizeState();
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+
+      const changed = getChangedSections(before, state);
+      if(changed.size) applyChangedSections(changed);
+
+      lastKnownRemoteUpdatedAt = full.updated_at || remoteStamp;
+      pollBackoffMs = POLL_INTERVAL_MS;
+    }catch(err){
+      console.warn("Attendance Systems: background poll failed.", err);
+      pollBackoffMs = Math.min(pollBackoffMs * 2, POLL_BACKOFF_MAX_MS);
+    }finally{
+      pollInFlight = false;
+      if(!document.hidden) schedulePoll(pollBackoffMs);
+    }
+  }
+
+  /* ============================================================
+     SECTION 3: GENERAL UTILITIES
+  ============================================================ */
+  function generateId(){
+    return "id_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c=>({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[c]));
+  }
+
+  function todayKey(){
+    return formatDateKey(new Date());
+  }
+
+  function formatDateKey(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function formatTime(d){
+    let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2,"0");
+    const s = String(d.getSeconds()).padStart(2,"0");
+    const ampm = h >= 12 ? "PM" : "AM";
+    let h12 = h % 12; if(h12 === 0) h12 = 12;
+    return `${String(h12).padStart(2,"0")}:${m}:${s} ${ampm}`;
+  }
+
+  function formatFullDateTime(d){
+    const dateStr = d.toLocaleDateString(undefined, { weekday:"short", year:"numeric", month:"short", day:"numeric" });
+    return `${dateStr} • ${formatTime(d)}`;
+  }
+
+  function formatMoney(n){
+    n = Number(n) || 0;
+    return n.toLocaleString(undefined, { minimumFractionDigits:0, maximumFractionDigits:2 });
+  }
+
+  function formatDays(n){
+    n = Number(n) || 0;
+    return n.toLocaleString(undefined, { minimumFractionDigits:0, maximumFractionDigits:2 });
+  }
+
+  function monthKeyOf(dateKey){
+    return String(dateKey).slice(0,7);
+  }
+
+  function todayMonthKey(){
+    return monthKeyOf(todayKey());
+  }
+
+  function getFeeChargesSubtotal(charges, discount){
+    const c = charges || {};
+    const subtotal = (Number(c.tuition)||0) + (Number(c.ac)||0) + (Number(c.arrears)||0) + (Number(c.sports)||0) + (Number(c.music)||0) + (Number(c.fines)||0);
+    return Math.max(0, subtotal - (Number(discount)||0));
+  }
+
+  // Looks at this student's fee records to summarize where they stand for a
+  // given billing period (defaults to the current month). Falls back to the
+  // most recent record on file if nothing has been billed for that period
+  // yet, and falls back to their saved default charges if they have no fee
+  // records at all (i.e. nothing has been billed through the Fund tab yet).
+  function getStudentFeeSummary(roll, monthKey){
+    monthKey = monthKey || todayMonthKey();
+    const records = (state.feeRecords || []).filter(r=>String(r.roll||"").toLowerCase() === String(roll).toLowerCase());
+    let rec = records.find(r=>r.period === monthKey);
+    if(!rec && records.length){
+      rec = records.reduce((a,b)=> (b.period||"") > (a.period||"") ? b : a);
+    }
+    if(!rec){
+      const match = findStudentGlobal(roll);
+      if(match && match.student.defaultCharges){
+        const due = getFeeChargesSubtotal(match.student.defaultCharges, match.student.discount);
+        return { due, paid:0, balance:due, status: due > 0 ? "Not Billed" : "No Charges", period: monthKey };
+      }
+      return { due:0, paid:0, balance:0, status:"Not Billed", period: monthKey };
+    }
+    const due = getEffectiveAmountDue(rec);
+    const paid = Number(rec.amountPaid) || 0;
+    const balance = Math.max(0, due - paid);
+    const status = balance <= 0 ? "Paid" : (paid > 0 ? "Partial" : "Unpaid");
+    return { due, paid, balance, status, period: rec.period };
+  }
+
+  function feeStatusBadgeColor(status){
+    if(status === "Paid") return "success";
+    if(status === "Partial") return "warning";
+    if(status === "Not Billed" || status === "No Charges") return "muted";
+    return "danger";
+  }
+
+  // Jumps to the Fund Management tab and runs the roll-number lookup for
+  // this student, so the admin can review/record their payment there.
+  function handleOpenFeeLookup(roll){
+    switchTab("fund");
+    if(els.feeRollNumber){
+      els.feeRollNumber.value = roll;
+      handleFeeRollLookup();
+      els.feeRollNumber.focus();
+    }
+  }
+
+  function addDaysToKey(dateKey, n){
+    const [y,m,d] = String(dateKey).split("-").map(Number);
+    const dt = new Date(y, (m||1)-1, d||1);
+    dt.setDate(dt.getDate() + n);
+    return formatDateKey(dt);
+  }
+
+  function daysBetweenKeys(fromKey, toKey){
+    const [ay,am,ad] = String(fromKey).split("-").map(Number);
+    const [by,bm,bd] = String(toKey).split("-").map(Number);
+    const da = new Date(ay, (am||1)-1, ad||1);
+    const db = new Date(by, (bm||1)-1, bd||1);
+    return Math.round((db - da) / 86400000);
+  }
+
+  function addMonthsToPeriod(period, n){
+    const [y,m] = String(period).split("-").map(Number);
+    const d = new Date(y, (m||1) - 1 + n, 1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+  }
+
+  function formatMonthLabel(monthKey){
+    const parts = String(monthKey).split("-").map(Number);
+    const y = parts[0], m = parts[1] || 1;
+    return new Date(y, m-1, 1).toLocaleDateString(undefined, { month:"long", year:"numeric" });
+  }
+
+  function getStatusForNow(d){
+    d = d || new Date();
+    const secs = d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
+    return secs >= LATE_CUTOFF_SECONDS ? "late" : "present";
+  }
+
+  function compareRoll(a,b){
+    return String(a).localeCompare(String(b), undefined, { numeric:true, sensitivity:"base" });
+  }
+
+  function csvEscape(val){
+    const s = String(val === undefined || val === null ? "" : val);
+    if(/[",\n\r]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }
+
+  function sanitizeFilename(name){
+    return name.replace(/[^a-z0-9]+/gi, "_");
+  }
+
+  /* ============================================================
+     SECTION 4: DATA ACCESSORS
+  ============================================================ */
+  function getClassById(id){
+    return state.classes.find(c=>c.id === id) || null;
+  }
+
+  // Roll numbers are unique per student across the whole school, so a roll
+  // number lookup searches every class rather than requiring one to be
+  // pre-selected. Returns { cls, student } or null.
+  function findStudentGlobal(roll){
+    const target = String(roll).toLowerCase();
+    for(const cls of state.classes){
+      const student = cls.students.find(s=>s.roll.toLowerCase() === target);
+      if(student) return { cls, student };
+    }
+    return null;
+  }
+
+  // Looks up a faculty member by roll number (case-insensitive). Returns the
+  // faculty record or null.
+  function findFacultyByRoll(roll){
+    const target = String(roll).toLowerCase();
+    return state.faculty.find(f=>String(f.roll || "").toLowerCase() === target) || null;
+  }
+
+  // Unified kiosk lookup: tries students first, then faculty, so the same
+  // roll-number field can mark attendance for either. Returns
+  // { type:"student", cls, student } or { type:"faculty", faculty } or null.
+  function findPersonGlobal(roll){
+    const student = findStudentGlobal(roll);
+    if(student) return { type:"student", cls: student.cls, student: student.student };
+    const fac = findFacultyByRoll(roll);
+    if(fac) return { type:"faculty", faculty: fac };
+    return null;
+  }
+
+  function getSortedStudents(cls){
+    return [...cls.students].sort((a,b)=>compareRoll(a.roll, b.roll));
+  }
+
+  function getAttendanceRecord(classId, dateKey, roll){
+    return (state.attendance[classId] && state.attendance[classId][dateKey] && state.attendance[classId][dateKey][roll]) || null;
+  }
+
+  function setAttendanceRecord(classId, dateKey, roll, record){
+    if(!state.attendance[classId]) state.attendance[classId] = {};
+    if(!state.attendance[classId][dateKey]) state.attendance[classId][dateKey] = {};
+    state.attendance[classId][dateKey][roll] = record;
+  }
+
+  function deleteAttendanceRecord(classId, dateKey, roll){
+    if(state.attendance[classId] && state.attendance[classId][dateKey]){
+      delete state.attendance[classId][dateKey][roll];
+    }
+    state.tombstones.attendance[classId + "::" + dateKey + "::" + roll] = Date.now();
+  }
+
+  /* ---------- Faculty accessors & payroll math ---------- */
+  const LATE_STRIKES_PER_ABSENT = 4; // 4 late marks in a month == 1 day absent
+
+  function getFacultyById(id){
+    return state.faculty.find(f=>f.id === id) || null;
+  }
+
+  function getFacultyWorkingDays(){
+    const n = Number(state.settings.facultyWorkingDays);
+    return (Number.isFinite(n) && n > 0) ? n : 26;
+  }
+
+  function getFacultyDailyRate(fac){
+    return (Number(fac.monthlySalary) || 0) / getFacultyWorkingDays();
+  }
+
+  function getFacultyAttendanceRecord(facultyId, dateKey){
+    return (state.facultyAttendance[facultyId] && state.facultyAttendance[facultyId][dateKey]) || null;
+  }
+
+  function setFacultyAttendanceRecord(facultyId, dateKey, record){
+    if(!state.facultyAttendance[facultyId]) state.facultyAttendance[facultyId] = {};
+    state.facultyAttendance[facultyId][dateKey] = record;
+  }
+
+  // Computes a teacher's attendance + payroll picture for one calendar month.
+  // Each late mark deducts 1/4 of a day's pay immediately (so it accrues
+  // fractionally as lates happen), and 4 late marks add up to exactly one
+  // full day's deduction — same as one explicit absent day.
+  function computeFacultyMonthStats(facultyId, monthKey){
+    const records = state.facultyAttendance[facultyId] || {};
+    let present = 0, late = 0, absent = 0;
+    Object.keys(records).forEach(dateKey=>{
+      if(monthKeyOf(dateKey) !== monthKey) return;
+      const status = records[dateKey].status;
+      if(status === "present") present++;
+      else if(status === "late") late++;
+      else if(status === "absent") absent++;
+    });
+    const conversions = late / LATE_STRIKES_PER_ABSENT; // fractional day(s) from late marks
+    const deductionDays = absent + conversions;
+    const fac = getFacultyById(facultyId);
+    const dailyRate = fac ? getFacultyDailyRate(fac) : 0;
+    const deductionAmount = deductionDays * dailyRate;
+    const salary = fac ? (Number(fac.monthlySalary) || 0) : 0;
+    const netPay = Math.max(0, salary - deductionAmount);
+    return { present, late, absent, conversions, deductionDays, deductionAmount, dailyRate, salary, netPay };
+  }
+
+  /* ---------- Fund / fee accessors ---------- */
+  // Accepts an optional explicit `id`. Auto-generated payroll deductions pass a
+  // deterministic id (see applyFacultyAttendanceMark) so that the same real-world
+  // event never posts twice — whether from a double click on one device or from
+  // two devices independently detecting the same late-arrival crossing before
+  // syncing with each other. If a transaction with that id already exists, this
+  // is a no-op instead of a duplicate entry.
+  function addFundTransaction(txn){
+    const id = txn.id || generateId();
+    if(state.fundTransactions.some(t=>t.id === id)) return;
+    state.fundTransactions.push({
+      id,
+      type: txn.type === "expense" ? "expense" : "income",
+      category: txn.category || "Other",
+      description: txn.description || "",
+      amount: Number(txn.amount) || 0,
+      date: txn.date || todayKey(),
+      auto: !!txn.auto
+    });
+    saveState();
+  }
+
+  /* ============================================================
+     SECTION 4B: RECURRING FEES & LATE FEE FINES
+     - Any fee marked "recurring" automatically opens a fresh unpaid
+       record for the next billing month once that month arrives.
+     - Late fine policy (flat, ONE-TIME penalties — not a daily charge):
+         paid on/before the 10th of the billing month  -> no fine
+         still unpaid on the 11th-20th                 -> one-time fine (stage 1)
+         still unpaid from the 21st onward              -> a further one-time
+                                                            fine on top (stage 2)
+       Each stage's fine is applied only once per fee record, the moment
+       that record first crosses into that stage. It never re-applies or
+       accrues again for the same record.
+  ============================================================ */
+  const DEFAULT_LATE_FEE_STAGE_AMOUNT = 5000;
+
+  // A student can only be billed once per calendar month: the id is derived
+  // from roll+period rather than randomly generated, so if two devices each
+  // create "this month's bill" for the same student — even within the same
+  // few seconds, before either has seen the other's write — they produce the
+  // exact same id. mergeArraysById then collapses them into one record
+  // instead of two, no matter how the timing lines up.
+  function feeRecordIdFor(roll, period){
+    const r = String(roll || "").trim().toLowerCase();
+    if(!r || !period) return null;
+    return "fee_" + r + "_" + period;
+  }
+  // The late fine is tracked separately (lateFeeTotal) rather than being
+  // baked permanently into amountDue, so the attendant can deselect/waive it
+  // afterward and have it drop back out of what's owed and out of earnings.
+  function getEffectiveLateFee(r){
+    return r.lateFeeWaived ? 0 : (Number(r.lateFeeTotal) || 0);
+  }
+  function getEffectiveAmountDue(r){
+    const base = Number(r.baseAmountDue != null ? r.baseAmountDue : r.amountDue) || 0;
+    return base + getEffectiveLateFee(r);
+  }
+
+  function getLateFeeStageAmount(stage){
+    const key = stage === 1 ? "lateFeeStage1Amount" : "lateFeeStage2Amount";
+    const v = Number(state.settings[key]);
+    return (Number.isFinite(v) && v >= 0) ? v : DEFAULT_LATE_FEE_STAGE_AMOUNT;
+  }
+
+  // Figures out which late-fee stage a fee record should be at *today*,
+  // based on its billing period and today's date:
+  //   0 = on/before the 10th of the billing month (no fine)
+  //   1 = the 11th-20th of the billing month (or later, if still unpaid
+  //       and we've already rolled past that month without it clearing)
+  //   2 = the 21st onward of the billing month (or any later month)
+  function lateFeeStageForToday(period, todayStr){
+    const curPeriod = monthKeyOf(todayStr);
+    if(curPeriod > period) return 2; // unpaid into a later month = well past the 21st cutoff
+    if(curPeriod < period) return 0; // billing period hasn't started yet (shouldn't normally happen)
+    const day = Number(todayStr.slice(8, 10));
+    if(day <= 10) return 0;
+    if(day <= 20) return 1;
+    return 2;
+  }
+
+  function processRecurringFees(){
+    if(!Array.isArray(state.feeRecords) || state.feeRecords.length === 0) return;
+    let changed = false;
+    const currentPeriod = todayMonthKey();
+    const todayStr = todayKey();
+
+    // 1) Roll recurring fee series forward: open a fresh unpaid record for
+    //    every billing month between the latest known cycle and the current one.
+    const latestBySeries = new Map();
+    state.feeRecords.forEach(r=>{
+      if(!r.recurring || !r.seriesId) return;
+      const cur = latestBySeries.get(r.seriesId);
+      if(!cur || r.period > cur.period) latestBySeries.set(r.seriesId, r);
+    });
+    latestBySeries.forEach(latest=>{
+      let p = latest.period;
+      while(p < currentPeriod){
+        p = addMonthsToPeriod(p, 1);
+        // Same student, same billing month => same id, so if another device
+        // rolls this same series forward around the same moment, the two
+        // records merge into one instead of double-billing the student.
+        const rolledId = feeRecordIdFor(latest.roll, p) || generateId();
+        if(state.feeRecords.some(r=>r.id === rolledId)) continue;
+        const base = Number(latest.baseAmountDue != null ? latest.baseAmountDue : latest.amountDue) || 0;
+        state.feeRecords.push({
+          id: rolledId,
+          seriesId: latest.seriesId,
+          studentName: latest.studentName,
+          roll: latest.roll || "",
+          classId: latest.classId,
+          charges: latest.charges ? { ...latest.charges } : { tuition: base, ac:0, arrears:0, sports:0, music:0, fines:0 },
+          discount: Number(latest.discount) || 0,
+          recurring: true,
+          period: p,
+          baseAmountDue: base,
+          amountDue: base,
+          amountPaid: 0,
+          lateFeeTotal: 0,
+          lateFeeStage: 0,
+          lateFeeLastAppliedDate: null,
+          date: `${p}-01`
+        });
+        changed = true;
+      }
+    });
+
+    // 2) Apply the flat, one-time late-fee stage penalties to every record
+    //    with an outstanding balance whose billing-month stage has advanced
+    //    past what's already been charged.
+    state.feeRecords.forEach(r=>{
+      const due = getEffectiveAmountDue(r);
+      const paid = Number(r.amountPaid) || 0;
+      if(due - paid <= 0) return; // fully paid — no further fines
+      const period = r.period || monthKeyOf(r.date || todayStr);
+      const targetStage = lateFeeStageForToday(period, todayStr);
+      const currentStage = Number(r.lateFeeStage) || 0;
+      if(targetStage <= currentStage) return;
+      let addedFine = 0;
+      for(let s = currentStage + 1; s <= targetStage; s++){
+        addedFine += getLateFeeStageAmount(s);
+      }
+      // Added to the fine section (lateFeeTotal) only — amountDue/baseAmountDue
+      // stay untouched so the attendant can still deselect/waive this fine later.
+      if(addedFine > 0){
+        r.lateFeeTotal = (Number(r.lateFeeTotal) || 0) + addedFine;
+      }
+      r.lateFeeStage = targetStage;
+      r.lateFeeLastAppliedDate = todayStr;
+      changed = true;
+    });
+
+    if(changed) saveState();
+    return changed;
+  }
+
+  function computeFundSummary(){
+    let collected = 0, due = 0;
+    state.feeRecords.forEach(r=>{
+      const paid = Number(r.amountPaid) || 0;
+      const owed = getEffectiveAmountDue(r);
+      collected += paid;
+      due += Math.max(0, owed - paid);
+    });
+    let income = 0, expense = 0;
+    state.fundTransactions.forEach(t=>{
+      if(t.type === "income") income += Number(t.amount) || 0;
+      else expense += Number(t.amount) || 0;
+    });
+    const netBalance = collected + income - expense;
+    return { collected, due, income, expense, netBalance };
+  }
+
+  /* ============================================================
+     SECTION 5: SOUND EFFECTS (Web Audio API — no external files)
+  ============================================================ */
+  function ensureAudioCtx(){
+    if(!audioCtx){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return null;
+      audioCtx = new Ctx();
+    }
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+
+  function beep(freq, duration, type, delay){
+    const ctx = ensureAudioCtx();
+    if(!ctx) return;
+    const startAt = ctx.currentTime + (delay || 0);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type || "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.28, startAt + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+    osc.start(startAt);
+    osc.stop(startAt + duration + 0.05);
+  }
+
+  function playSound(kind){
+    try{
+      switch(kind){
+        case "present": beep(880, 0.16, "sine"); break;
+        case "late":    beep(560, 0.14, "sine"); beep(560, 0.14, "sine", 0.18); break;
+        case "absent":  beep(300, 0.30, "sine"); break;
+        case "error":   beep(180, 0.30, "sawtooth"); break;
+        case "info":    beep(660, 0.12, "sine"); break;
+        default:        beep(440, 0.14, "sine");
+      }
+    }catch(err){
+      console.warn("Attendance Systems: audio playback failed.", err);
+    }
+  }
+
+  /* ============================================================
+     SECTION 6: TOASTS
+  ============================================================ */
+  const TOAST_ICONS = { success:"✓", warning:"⏰", error:"✕", info:"ℹ" };
+
+  function showToast(message, type){
+    type = type || "info";
+    const container = els.toastContainer;
+    if(!container) return;
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<span class="toast-icon">${TOAST_ICONS[type] || "ℹ"}</span><span class="toast-msg"></span><button class="toast-close" aria-label="Dismiss">×</button>`;
+    toast.querySelector(".toast-msg").textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(()=> toast.classList.add("show"));
+
+    const remove = ()=>{
+      toast.classList.remove("show");
+      toast.classList.add("hide");
+      setTimeout(()=> toast.remove(), 320);
+    };
+    const timer = setTimeout(remove, 3800);
+    toast.querySelector(".toast-close").addEventListener("click", ()=>{
+      clearTimeout(timer);
+      remove();
+    });
+  }
+
+  /* ============================================================
+     SECTION 7: CONFIRM MODAL
+  ============================================================ */
+  function showConfirm(message, onConfirm){
+    els.confirmMessage.textContent = message;
+    els.confirmModal.classList.add("active");
+    els.confirmOkBtn.onclick = ()=>{ hideConfirm(); onConfirm(); };
+    els.confirmCancelBtn.onclick = ()=> hideConfirm();
+  }
+
+  function hideConfirm(){
+    els.confirmModal.classList.remove("active");
+  }
+
+  /* ============================================================
+     SECTION 8: DARK MODE
+  ============================================================ */
+  function applyInitialDarkMode(){
+    const isDark = (typeof state.settings.darkMode === "boolean")
+      ? state.settings.darkMode
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", isDark);
+    updateDarkModeIcon(isDark);
+  }
+
+  function toggleDarkMode(){
+    const isDark = document.documentElement.classList.toggle("dark");
+    state.settings.darkMode = isDark;
+    saveState();
+    updateDarkModeIcon(isDark);
+  }
+
+  function updateDarkModeIcon(isDark){
+    if(els.darkModeToggle) els.darkModeToggle.textContent = isDark ? "☀️" : "🌙";
+  }
+
+  /* ============================================================
+     SECTION 8b: DESKTOP ORIENTATION MODE
+  ============================================================ */
+  const DESKTOP_VIEWPORT_WIDTH = 1180;
+
+  function applyInitialDesktopMode(){
+    const isDesktop = !!state.settings.desktopMode;
+    setDesktopMode(isDesktop);
+  }
+
+  function toggleDesktopMode(){
+    const isDesktop = !document.documentElement.classList.contains("desktop-mode");
+    setDesktopMode(isDesktop);
+    state.settings.desktopMode = isDesktop;
+    saveState();
+  }
+
+  function setDesktopMode(isDesktop){
+    document.documentElement.classList.toggle("desktop-mode", isDesktop);
+    if(els.viewportMeta){
+      els.viewportMeta.setAttribute("content", isDesktop
+        ? `width=${DESKTOP_VIEWPORT_WIDTH}`
+        : "width=device-width, initial-scale=1.0");
+    }
+    if(els.desktopModeToggle){
+      els.desktopModeToggle.classList.toggle("active", isDesktop);
+      els.desktopModeToggle.textContent = isDesktop ? "📱" : "🖥️";
+      els.desktopModeToggle.title = isDesktop ? "Switch to mobile view" : "Switch to desktop view";
+    }
+  }
+
+  /* ============================================================
+     SECTION 9: CLOCK / LIVE PREVIEW
+  ============================================================ */
+  function updateHeaderClock(){
+    if(els.headerClock) els.headerClock.textContent = formatFullDateTime(new Date());
+  }
+
+  function updateStatusPreview(){
+    if(!els.statusPreview) return;
+    const now = new Date();
+    const status = getStatusForNow(now);
+    const color = STATUS_COLOR[status];
+    els.statusPreview.innerHTML = `<span class="pill ${color}">If marked now → ${status.toUpperCase()}</span><span class="preview-time">${formatTime(now)}</span>`;
+  }
+
+  /* ============================================================
+     SECTION 10: TAB NAVIGATION
+  ============================================================ */
+  function switchTab(tabName){
+    ui.activeTab = tabName;
+    document.querySelectorAll(".tab-panel").forEach(p=>{
+      p.classList.toggle("active", p.id === `tab-${tabName}`);
+    });
+    document.querySelectorAll(".tab-btn").forEach(b=>{
+      b.classList.toggle("active", b.dataset.tab === tabName);
+    });
+    if(tabName === "mark"){
+      renderMarkLists();
+      if(getClassById(ui.markClassId)) refocusRollInput(els.rollInput);
+    }
+    if(tabName === "classes") renderClassesTab();
+    if(tabName === "records") renderRecordsTable();
+    if(tabName === "faculty") renderFacultyTab();
+    if(tabName === "fund") renderFundTab();
+  }
+
+  /* ============================================================
+     SECTION 11: CLASS SELECT DROPDOWNS
+  ============================================================ */
+  function populateClassSelect(selectEl, selectedId){
+    if(!selectEl) return null;
+    const classes = [...state.classes].sort((a,b)=>a.name.localeCompare(b.name));
+    if(classes.length === 0){
+      selectEl.innerHTML = `<option value="">No classes available</option>`;
+      selectEl.disabled = true;
+      return null;
+    }
+    selectEl.disabled = false;
+    selectEl.innerHTML = classes.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
+    const validId = classes.some(c=>c.id === selectedId) ? selectedId : classes[0].id;
+    selectEl.value = validId;
+    return validId;
+  }
+
+  function renderClassSelects(){
+    ui.markClassId = populateClassSelect(els.markClassSelect, ui.markClassId);
+    ui.recordsClassId = populateClassSelect(els.recordsClassSelect, ui.recordsClassId);
+    state.settings.lastMarkClassId = ui.markClassId;
+    state.settings.lastRecordsClassId = ui.recordsClassId;
+    saveState();
+    renderFeeClassSelect();
+  }
+
+  /* ============================================================
+     SECTION 12: MARK ATTENDANCE — RENDER & LOGIC
+  ============================================================ */
+  function renderMarkLists(){
+    const container = els.markListsContainer;
+    if(!container) return;
+    const cls = getClassById(ui.markClassId);
+    if(!cls){
+      container.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">Create a class in the Classes tab to start marking attendance.</div>`;
+      return;
+    }
+    const dateKey = todayKey();
+    const students = getSortedStudents(cls);
+    const groups = { present:[], late:[], absent:[], unmarked:[] };
+    students.forEach(s=>{
+      const rec = getAttendanceRecord(cls.id, dateKey, s.roll);
+      if(!rec){ groups.unmarked.push(s); }
+      else{ groups[rec.status] = groups[rec.status] || []; groups[rec.status].push({ ...s, time: rec.timeDisplay, source: rec.source }); }
+    });
+
+    const colDefs = [
+      { key:"present",  label:"Present",    icon:"✓" },
+      { key:"late",     label:"Late",       icon:"⏰" },
+      { key:"absent",   label:"Absent",     icon:"✕" },
+      { key:"unmarked", label:"Not Marked", icon:"…" }
+    ];
+
+    container.innerHTML = colDefs.map(col=>{
+      const list = groups[col.key] || [];
+      const collapsed = ui.collapsedStatusCols.has(col.key);
+      const itemsHtml = list.length ? list.map(s=>`
+        <li class="student-row">
+          <span class="student-roll">${escapeHtml(s.roll)}</span>
+          <span class="student-name">${escapeHtml(s.name)}</span>
+          ${col.key !== "unmarked" ? `<span class="student-time">${escapeHtml(s.time || "")}${s.source === "admin" ? " <em>(manual)</em>" : ""}</span>` : ""}
+        </li>`).join("") : `<li class="empty-row">None</li>`;
+      return `
+        <div class="status-col glass-card">
+          <div class="status-col-header ${STATUS_COLOR[col.key]}" data-action="toggle-status-col" data-status="${col.key}" style="padding:4px 6px;border-radius:10px;cursor:pointer;">
+            <span>${col.icon}</span><span class="status-label">${col.label}</span>
+            <span class="status-count">${list.length}</span>
+            ${!collapsed && list.length ? `<button type="button" class="icon-btn" data-action="copy-status-list" data-status="${col.key}" title="Copy ${col.label} list">📋</button>` : ""}
+            <span class="chevron ${collapsed ? "" : "open"}">▸</span>
+          </div>
+          <ul class="student-list" style="${collapsed ? "display:none;" : ""}">${itemsHtml}</ul>
+        </div>`;
+    }).join("");
+  }
+
+  function toggleStatusCol(statusKey){
+    if(ui.collapsedStatusCols.has(statusKey)) ui.collapsedStatusCols.delete(statusKey);
+    else ui.collapsedStatusCols.add(statusKey);
+    renderMarkLists();
+  }
+
+  function handleCopyStatusList(statusKey){
+    const cls = getClassById(ui.markClassId);
+    if(!cls) return;
+    if(ui.collapsedStatusCols.has(statusKey)) return; // only copy an open (expanded) list
+
+    const dateKey = todayKey();
+    const students = getSortedStudents(cls);
+    const list = [];
+    students.forEach(s=>{
+      const rec = getAttendanceRecord(cls.id, dateKey, s.roll);
+      const status = rec ? rec.status : "unmarked";
+      if(status !== statusKey) return;
+      list.push({ name: s.name, status, time: rec ? rec.timeDisplay : "—" });
+    });
+
+    if(!list.length){
+      showToast("No students in this list.", "error");
+      return;
+    }
+
+    const STATUS_ICON = { present:"✅", late:"⏰", absent:"❌", unmarked:"➖" };
+    const label = { present:"Present", late:"Late", absent:"Absent", unmarked:"Not Marked" }[statusKey] || statusKey;
+    const icon = STATUS_ICON[statusKey] || "";
+    const dateLabel = new Date().toLocaleDateString(undefined, { day:"2-digit", month:"short", year:"numeric" });
+
+    const numW = String(list.length).length + 1;
+    const pad = (str, len) => {
+      str = String(str);
+      return str.length >= len ? str : str + " ".repeat(len - str.length);
+    };
+
+    const lines = [];
+    lines.push(`${icon} ${cls.name} — ${label} (${list.length}) — ${dateLabel}`);
+    lines.push("――――――――――――――――――――――――");
+    list.forEach((s,i)=>{
+      lines.push(statusKey === "unmarked"
+        ? `${pad(i+1+".", numW)} ${s.name}`
+        : `${pad(i+1+".", numW)} ${s.name} — ${s.time}`);
+    });
+    const text = lines.join("\n");
+
+    const fallbackCopy = ()=>{
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try{
+        document.execCommand("copy");
+        showToast(`Copied ${list.length} ${label.toLowerCase()} student${list.length === 1 ? "" : "s"}.`, "success");
+      }catch(err){
+        showToast("Couldn't copy list.", "error");
+      }
+      document.body.removeChild(textarea);
+    };
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>{
+        showToast(`Copied ${list.length} ${label.toLowerCase()} student${list.length === 1 ? "" : "s"}.`, "success");
+      }).catch(fallbackCopy);
+    }else{
+      fallbackCopy();
+    }
+  }
+
+  function renderStudentInfoCard(data){
+    const card = els.studentInfoCard;
+    if(!card) return;
+    if(!data){
+      card.style.display = "none";
+      card.innerHTML = "";
+      return;
+    }
+    const color = STATUS_COLOR[data.status] || "muted";
+    card.style.display = "flex";
+    if(data.type === "faculty"){
+      const fac = data.faculty;
+      card.innerHTML = `
+        <div class="student-info-main">
+          <span class="student-info-name">👩‍🏫 ${escapeHtml(fac.name)}</span>
+          <span class="student-info-meta">Roll ${escapeHtml(fac.roll)} · ${escapeHtml(fac.role || "Faculty")}</span>
+        </div>
+        <span class="pill ${color}">${escapeHtml(data.status.toUpperCase())}${data.time ? " · " + escapeHtml(data.time) : ""}</span>
+      `;
+      return;
+    }
+    const { student, cls, status, time } = data;
+    const feeSummary = getStudentFeeSummary(student.roll);
+    card.innerHTML = `
+      <div class="student-info-main">
+        <span class="student-info-name">${escapeHtml(student.name)}</span>
+        <span class="student-info-meta">Roll ${escapeHtml(student.roll)} · ${escapeHtml(cls.name)}</span>
+      </div>
+      <span class="pill ${color}">${escapeHtml(status.toUpperCase())}${time ? " · " + escapeHtml(time) : ""}</span>
+      <span class="badge ${feeStatusBadgeColor(feeSummary.status)}" style="cursor:pointer;" data-action="open-fee-lookup" data-roll="${escapeHtml(student.roll)}" title="Fee due PKR ${formatMoney(feeSummary.due)}, paid PKR ${formatMoney(feeSummary.paid)}, remaining PKR ${formatMoney(feeSummary.balance)}. Click to open in Fund Management.">Fee: PKR ${formatMoney(feeSummary.balance)} left · ${feeSummary.status}</span>
+    `;
+  }
+
+  function handleMarkAttendance(e){
+    e.preventDefault();
+    const input = els.rollInput;
+    const roll = input.value.trim();
+    if(!roll){
+      showToast("Please enter a roll number.", "error");
+      playSound("error");
+      refocusRollInput(input);
+      return;
+    }
+    if(state.classes.length === 0 && state.faculty.length === 0){
+      showToast("Add a class/students or some faculty first.", "error");
+      playSound("error");
+      refocusRollInput(input);
+      return;
+    }
+    const found = findPersonGlobal(roll);
+    if(!found){
+      showToast(`No student or teacher found with roll number "${roll}".`, "error");
+      playSound("error");
+      renderStudentInfoCard(null);
+      input.select();
+      refocusRollInput(input);
+      return;
+    }
+    if(found.type === "faculty"){
+      handleMarkFacultyFromKiosk(found.faculty, input);
+      return;
+    }
+    const { cls, student } = found;
+    // Auto-detect and switch to this student's class so the lists below reflect them.
+    if(ui.markClassId !== cls.id){
+      ui.markClassId = cls.id;
+      state.settings.lastMarkClassId = ui.markClassId;
+      if(els.markClassSelect) els.markClassSelect.value = cls.id;
+      saveState();
+    }
+    const dateKey = todayKey();
+    const existing = getAttendanceRecord(cls.id, dateKey, student.roll);
+    if(existing){
+      showToast(`${student.name} (${cls.name}) is already marked ${existing.status.toUpperCase()} today at ${existing.timeDisplay}.`, "info");
+      playSound("info");
+      renderStudentInfoCard({ student, cls, status: existing.status, time: existing.timeDisplay });
+      input.value = "";
+      refocusRollInput(input);
+      renderMarkLists();
+      return;
+    }
+    const now = new Date();
+    const status = getStatusForNow(now);
+    setAttendanceRecord(cls.id, dateKey, student.roll, {
+      status, timeDisplay: formatTime(now), timestamp: now.getTime(), source:"self"
+    });
+    saveState();
+    showToast(`${student.name} (${cls.name}) marked ${status.toUpperCase()} at ${formatTime(now)}.`, status === "present" ? "success" : "warning");
+    playSound(status);
+    renderStudentInfoCard({ student, cls, status, time: formatTime(now) });
+    input.value = "";
+    refocusRollInput(input);
+    renderMarkLists();
+  }
+
+  // Kiosk self-mark path for a teacher whose roll number was scanned/typed
+  // into the same roll-number field students use. Mirrors handleMarkAttendance
+  // but records into facultyAttendance and applies payroll deduction rules.
+  function handleMarkFacultyFromKiosk(fac, input){
+    const dateKey = todayKey();
+    const existing = getFacultyAttendanceRecord(fac.id, dateKey);
+    if(existing){
+      showToast(`${fac.name} is already marked ${existing.status.toUpperCase()} today at ${existing.timeDisplay}.`, "info");
+      playSound("info");
+      renderStudentInfoCard({ type:"faculty", faculty: fac, status: existing.status, time: existing.timeDisplay });
+      input.value = "";
+      refocusRollInput(input);
+      return;
+    }
+    const now = new Date();
+    const status = getStatusForNow(now);
+    const result = applyFacultyAttendanceMark(fac, status, "self");
+    showToast(`${fac.name} (teacher) marked ${status.toUpperCase()} at ${result.timeDisplay}.`, status === "present" ? "success" : "warning");
+    renderStudentInfoCard({ type:"faculty", faculty: fac, status, time: result.timeDisplay });
+    input.value = "";
+    refocusRollInput(input);
+    if(ui.activeTab === "faculty") renderFacultyTab();
+  }
+
+  // Keeps the roll-number field focused no matter what happens above.
+  // Scanners (keyboard-wedge USB devices) type instantly and expect this
+  // field to be ready for the next scan immediately — a single focus()
+  // call can occasionally lose the race against re-rendering, so we
+  // re-assert focus on the next animation frame as a safety net too.
+  function refocusRollInput(input){
+    if(!input) return;
+    input.focus();
+    requestAnimationFrame(()=>{
+      if(document.activeElement !== input){
+        input.focus();
+      }
+    });
+  }
+
+  function handleMarkAllAbsent(){
+    const cls = getClassById(ui.markClassId);
+    if(!cls){
+      showToast("Please select a class first.", "error");
+      return;
+    }
+    const dateKey = todayKey();
+    const unmarked = cls.students.filter(s=>!getAttendanceRecord(cls.id, dateKey, s.roll));
+    if(unmarked.length === 0){
+      showToast("Everyone in this class is already marked today.", "info");
+      return;
+    }
+    showConfirm(`Mark ${unmarked.length} unmarked student(s) in ${cls.name} as ABSENT for today?`, ()=>{
+      const now = new Date();
+      unmarked.forEach(s=>{
+        setAttendanceRecord(cls.id, dateKey, s.roll, { status:"absent", timeDisplay:"—", timestamp: now.getTime(), source:"admin" });
+      });
+      saveState();
+      showToast(`${unmarked.length} student(s) marked absent.`, "error");
+      playSound("absent");
+      renderMarkLists();
+      refocusRollInput(els.rollInput);
+    });
+  }
+
+  /* ============================================================
+     SECTION 13: CLASSES TAB — RENDER & LOGIC
+  ============================================================ */
+  function renderClassesTab(){
+    const container = els.classesListContainer;
+    if(!container) return;
+    if(state.classes.length === 0){
+      container.innerHTML = `<div class="empty-state glass-card">No classes yet. Add your first class above to get started.</div>`;
+      return;
+    }
+    const sorted = [...state.classes].sort((a,b)=>a.name.localeCompare(b.name));
+    container.innerHTML = sorted.map(cls=>{
+      const expanded = ui.expandedClasses.has(cls.id);
+      const editing = ui.editingClassId === cls.id;
+      const students = getSortedStudents(cls);
+      const studentsHtml = students.length ? students.map(s=>{
+        const feeSummary = getStudentFeeSummary(s.roll);
+        return `
+        <li class="student-row">
+          <span class="student-roll">${escapeHtml(s.roll)}</span>
+          <span class="student-name">${escapeHtml(s.name)}</span>
+          <span class="badge ${feeStatusBadgeColor(feeSummary.status)}" style="cursor:pointer;" data-action="open-fee-lookup" data-roll="${escapeHtml(s.roll)}" title="Fee due PKR ${formatMoney(feeSummary.due)}, paid PKR ${formatMoney(feeSummary.paid)}, remaining PKR ${formatMoney(feeSummary.balance)}. Click to open in Fund Management.">PKR ${formatMoney(feeSummary.balance)} left · ${feeSummary.status}</span>
+          <button class="icon-btn danger" data-action="delete-student" data-class-id="${cls.id}" data-roll="${escapeHtml(s.roll)}" title="Remove student">🗑</button>
+        </li>`;
+      }).join("") : `<li class="empty-row">No students added yet.</li>`;
+      const titleHtml = editing ? `
+            <span class="chevron ${expanded ? "open" : ""}">▸</span>
+            <form class="inline-form rename-class-form" data-class-id="${cls.id}" style="display:flex;gap:6px;align-items:center;flex:1;">
+              <input type="text" class="rename-class-input" value="${escapeHtml(cls.name)}" autocomplete="off" required />
+              <button type="submit" class="icon-btn" title="Save">✓</button>
+              <button type="button" class="icon-btn" data-action="cancel-rename-class" title="Cancel">✕</button>
+            </form>` : `
+            <span class="chevron ${expanded ? "open" : ""}">▸</span>
+            <span class="class-name">${escapeHtml(cls.name)}</span>
+            <span class="class-count">${students.length} student${students.length !== 1 ? "s" : ""}</span>
+            <button class="icon-btn" data-action="edit-class" data-class-id="${cls.id}" title="Rename class">✏️</button>`;
+      return `
+      <div class="class-card glass-card">
+        <div class="class-card-header" data-action="toggle-class" data-class-id="${cls.id}">
+          <div class="class-card-title">${titleHtml}</div>
+          <button class="icon-btn danger" data-action="delete-class" data-class-id="${cls.id}" title="Delete class">🗑</button>
+        </div>
+        <div class="class-card-body ${expanded ? "open" : ""}">
+          <div class="ccb-inner">
+            <form class="inline-form add-student-form" data-class-id="${cls.id}">
+              <input type="text" placeholder="Roll number" data-field="roll" autocomplete="off" required />
+              <input type="text" placeholder="Student name" data-field="name" autocomplete="off" required />
+              <input type="number" min="0" step="1" placeholder="Tuition (PKR)" data-field="chg-tuition" autocomplete="off" />
+              <input type="number" min="0" step="1" placeholder="A/C (PKR)" data-field="chg-ac" autocomplete="off" />
+              <input type="number" min="0" step="1" placeholder="Arrears (PKR)" data-field="chg-arrears" autocomplete="off" />
+              <input type="number" min="0" step="1" placeholder="Sports (PKR)" data-field="chg-sports" autocomplete="off" />
+              <input type="number" min="0" step="1" placeholder="Music (PKR)" data-field="chg-music" autocomplete="off" />
+              <input type="number" min="0" step="1" placeholder="Discount (PKR)" data-field="chg-discount" autocomplete="off" />
+              <button type="submit" class="btn btn-secondary">Add Student</button>
+            </form>
+            <ul class="student-list">${studentsHtml}</ul>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function toggleClassExpand(classId){
+    if(ui.expandedClasses.has(classId)) ui.expandedClasses.delete(classId);
+    else ui.expandedClasses.add(classId);
+    renderClassesTab();
+  }
+
+  function startEditClass(classId){
+    ui.editingClassId = classId;
+    renderClassesTab();
+    const input = els.classesListContainer.querySelector(`.rename-class-form[data-class-id="${classId}"] .rename-class-input`);
+    if(input){ input.focus(); input.select(); }
+  }
+
+  function cancelEditClass(){
+    ui.editingClassId = null;
+    renderClassesTab();
+  }
+
+  function handleRenameClass(classId, newName){
+    const cls = getClassById(classId);
+    if(!cls) return;
+    const name = newName.trim();
+    if(!name){
+      showToast("Class name cannot be empty.", "error");
+      return;
+    }
+    const exists = state.classes.some(c=>c.id !== classId && c.name.toLowerCase() === name.toLowerCase());
+    if(exists){
+      showToast("A class with this name already exists.", "error");
+      return;
+    }
+    cls.name = name;
+    saveState();
+    ui.editingClassId = null;
+    showToast(`Class renamed to "${name}".`, "success");
+    renderClassesTab();
+    renderClassSelects();
+    renderMarkLists();
+    renderRecordsTable();
+  }
+
+  function handleAddClass(e){
+    e.preventDefault();
+    const input = els.newClassName;
+    const name = input.value.trim();
+    if(!name){
+      showToast("Class name cannot be empty.", "error");
+      return;
+    }
+    const exists = state.classes.some(c=>c.name.toLowerCase() === name.toLowerCase());
+    if(exists){
+      showToast("A class with this name already exists.", "error");
+      return;
+    }
+    state.classes.push({ id: generateId(), name, students: [] });
+    saveState();
+    input.value = "";
+    showToast(`Class "${name}" created.`, "success");
+    renderClassesTab();
+    renderClassSelects();
+    if(ui.activeTab === "mark") renderMarkLists();
+  }
+
+  function handleDeleteClass(classId){
+    const cls = getClassById(classId);
+    if(!cls) return;
+    showConfirm(`Delete class "${cls.name}" and all its attendance records? This cannot be undone.`, ()=>{
+      state.classes = state.classes.filter(c=>c.id !== classId);
+      delete state.attendance[classId];
+      state.tombstones.classes[classId] = Date.now();
+      ui.expandedClasses.delete(classId);
+      if(ui.markClassId === classId) ui.markClassId = null;
+      if(ui.recordsClassId === classId) ui.recordsClassId = null;
+      saveState();
+      showToast(`Class "${cls.name}" deleted.`, "error");
+      renderClassesTab();
+      renderClassSelects();
+      renderMarkLists();
+      renderRecordsTable();
+    });
+  }
+
+  function handleAddStudent(classId, rollInput, nameInput, chargeInputs){
+    const cls = getClassById(classId);
+    if(!cls) return;
+    const roll = rollInput.value.trim();
+    const name = nameInput.value.trim();
+    const readChg = (el)=>{
+      const v = el ? Number(el.value) : 0;
+      return (Number.isFinite(v) && v >= 0) ? v : 0;
+    };
+    const defaultCharges = {
+      tuition: readChg(chargeInputs && chargeInputs.tuition),
+      ac: readChg(chargeInputs && chargeInputs.ac),
+      arrears: readChg(chargeInputs && chargeInputs.arrears),
+      sports: readChg(chargeInputs && chargeInputs.sports),
+      music: readChg(chargeInputs && chargeInputs.music)
+    };
+    const discount = readChg(chargeInputs && chargeInputs.discount);
+    if(!roll || !name){
+      showToast("Please enter both roll number and name.", "error");
+      return;
+    }
+    const dupMatch = findStudentGlobal(roll);
+    if(dupMatch){
+      const msg = dupMatch.cls.id === cls.id
+        ? `Roll number "${roll}" already exists in ${cls.name}.`
+        : `Roll number "${roll}" is already assigned to ${dupMatch.student.name} in ${dupMatch.cls.name}. Roll numbers must be unique across all classes.`;
+      showToast(msg, "error");
+      return;
+    }
+    const dupFaculty = findFacultyByRoll(roll);
+    if(dupFaculty){
+      showToast(`Roll number "${roll}" is already assigned to ${dupFaculty.name} on the Faculty list. Roll numbers must be unique across students and teachers.`, "error");
+      return;
+    }
+    cls.students.push({ roll, name, defaultCharges, discount, addedAt: Date.now() });
+    saveState();
+    showToast(`${name} added to ${cls.name}.`, "success");
+    ui.expandedClasses.add(classId);
+    renderClassesTab();
+    renderClassSelects();
+    if(ui.activeTab === "mark" && ui.markClassId === classId) renderMarkLists();
+    const freshRollInput = els.classesListContainer.querySelector(`.add-student-form[data-class-id="${classId}"] [data-field="roll"]`);
+    if(freshRollInput) freshRollInput.focus();
+  }
+
+  function handleDeleteStudent(classId, roll){
+    const cls = getClassById(classId);
+    if(!cls) return;
+    const student = cls.students.find(s=>s.roll === roll);
+    if(!student) return;
+    showConfirm(`Remove ${student.name} (Roll ${student.roll}) from ${cls.name}? Their attendance history will also be deleted.`, ()=>{
+      cls.students = cls.students.filter(s=>s.roll !== roll);
+      if(state.attendance[classId]){
+        Object.keys(state.attendance[classId]).forEach(date=>{
+          delete state.attendance[classId][date][roll];
+        });
+      }
+      state.tombstones.students[classId + "::" + roll] = Date.now();
+      saveState();
+      showToast(`${student.name} removed.`, "error");
+      ui.expandedClasses.add(classId);
+      renderClassesTab();
+      renderClassSelects();
+      if(ui.activeTab === "mark") renderMarkLists();
+      if(ui.activeTab === "records") renderRecordsTable();
+    });
+  }
+
+  function handleResetAllData(){
+    showConfirm("This will permanently delete ALL classes, students, attendance records, faculty, and fund/fee data. This cannot be undone. Continue?", ()=>{
+      const wipeTombstones = buildFullWipeTombstones(state, Date.now());
+      const carriedTombstones = mergeTombstones(wipeTombstones, state.tombstones);
+      localStorage.removeItem(STORAGE_KEY);
+      state = defaultState();
+      state.tombstones = carriedTombstones;
+      ui.markClassId = null;
+      ui.recordsClassId = null;
+      ui.expandedClasses.clear();
+      ui.recordsSearch = "";
+      if(els.recordsSearchInput) els.recordsSearchInput.value = "";
+      ui.recordsDate = todayKey();
+      if(els.recordsDateInput) els.recordsDateInput.value = ui.recordsDate;
+      ui.facultyMonth = todayMonthKey();
+      if(els.facultyMonthInput) els.facultyMonthInput.value = ui.facultyMonth;
+      if(els.facultyWorkingDaysInput) els.facultyWorkingDaysInput.value = getFacultyWorkingDays();
+      if(els.lateFeeStage1Input) els.lateFeeStage1Input.value = getLateFeeStageAmount(1);
+      if(els.lateFeeStage2Input) els.lateFeeStage2Input.value = getLateFeeStageAmount(2);
+      if(els.feeStudentName) resetFeeForm();
+      saveState();
+      renderClassSelects();
+      renderClassesTab();
+      renderMarkLists();
+      renderRecordsTable();
+      renderFacultyTab();
+      renderFundTab();
+      showToast("All data has been reset.", "error");
+    });
+  }
+
+  /* ============================================================
+     SECTION 14: RECORDS TAB — RENDER & LOGIC
+  ============================================================ */
+  function renderRecordsTable(){
+    const tbody = els.recordsTbody;
+    const summary = els.recordsSummary;
+    if(!tbody || !summary) return;
+    const cls = getClassById(ui.recordsClassId);
+    if(!cls){
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Select a class to view records.</td></tr>`;
+      summary.innerHTML = "";
+      return;
+    }
+    const dateKey = ui.recordsDate || todayKey();
+    const allStudents = getSortedStudents(cls);
+
+    const counts = { present:0, late:0, absent:0, unmarked:0 };
+    allStudents.forEach(s=>{
+      const rec = getAttendanceRecord(cls.id, dateKey, s.roll);
+      const status = rec ? rec.status : "unmarked";
+      counts[status] = (counts[status] || 0) + 1;
+    });
+
+    const search = ui.recordsSearch.trim().toLowerCase();
+    const filtered = search
+      ? allStudents.filter(s=>s.roll.toLowerCase().includes(search) || s.name.toLowerCase().includes(search))
+      : allStudents;
+
+    tbody.innerHTML = filtered.length ? filtered.map(s=>{
+      const rec = getAttendanceRecord(cls.id, dateKey, s.roll);
+      const status = rec ? rec.status : "unmarked";
+      const time = rec ? rec.timeDisplay : "—";
+      const manualTag = (rec && rec.source === "admin") ? `<span class="tag-manual">manual</span>` : "";
+      const label = status.charAt(0).toUpperCase() + status.slice(1);
+      return `
+        <tr>
+          <td>${escapeHtml(s.roll)}</td>
+          <td>${escapeHtml(s.name)}</td>
+          <td><span class="badge ${STATUS_COLOR[status]}">${label}</span>${manualTag}</td>
+          <td>${escapeHtml(time)}</td>
+          <td>
+            <select class="status-select" data-action="change-status" data-roll="${escapeHtml(s.roll)}">
+              <option value="unmarked" ${status === "unmarked" ? "selected" : ""}>Not Marked</option>
+              <option value="present" ${status === "present" ? "selected" : ""}>Present</option>
+              <option value="late" ${status === "late" ? "selected" : ""}>Late</option>
+              <option value="absent" ${status === "absent" ? "selected" : ""}>Absent</option>
+            </select>
+          </td>
+        </tr>`;
+    }).join("") : `<tr><td colspan="5" class="empty-state">No matching students.</td></tr>`;
+
+    summary.innerHTML = `
+      <span class="summary-pill total">Total: ${allStudents.length}</span>
+      <span class="summary-pill success">Present: ${counts.present}</span>
+      <span class="summary-pill warning">Late: ${counts.late}</span>
+      <span class="summary-pill danger">Absent: ${counts.absent}</span>
+      <span class="summary-pill muted">Not Marked: ${counts.unmarked}</span>
+    `;
+  }
+
+  function handleStatusOverride(roll, newStatus){
+    const classId = ui.recordsClassId;
+    const dateKey = ui.recordsDate || todayKey();
+    const cls = getClassById(classId);
+    if(!cls) return;
+    const student = cls.students.find(s=>s.roll === roll);
+    if(!student) return;
+
+    if(newStatus === "unmarked"){
+      deleteAttendanceRecord(classId, dateKey, roll);
+      saveState();
+      showToast(`${student.name}'s attendance was reset.`, "info");
+    }else{
+      const now = new Date();
+      setAttendanceRecord(classId, dateKey, roll, {
+        status: newStatus,
+        timeDisplay: newStatus === "absent" ? "—" : formatTime(now),
+        timestamp: now.getTime(),
+        source: "admin"
+      });
+      saveState();
+      const toastType = newStatus === "present" ? "success" : newStatus === "late" ? "warning" : "error";
+      showToast(`${student.name} set to ${newStatus.toUpperCase()}.`, toastType);
+    }
+    renderRecordsTable();
+    if(ui.activeTab !== "mark") renderMarkLists(); // keep mark tab fresh for next visit
+  }
+
+  function handleCopyNames(){
+    const cls = getClassById(ui.recordsClassId);
+    if(!cls){
+      showToast("Select a class first.", "error");
+      return;
+    }
+    const allStudents = getSortedStudents(cls);
+    const search = ui.recordsSearch.trim().toLowerCase();
+    const students = search
+      ? allStudents.filter(s=>s.roll.toLowerCase().includes(search) || s.name.toLowerCase().includes(search))
+      : allStudents;
+
+    if(!students.length){
+      showToast("No students to copy.", "error");
+      return;
+    }
+
+    const dateKey = ui.recordsDate || todayKey();
+    const STATUS_META = {
+      present:  { label:"Present",  icon:"✅" },
+      late:     { label:"Late",     icon:"⏰" },
+      absent:   { label:"Absent",   icon:"❌" },
+      unmarked: { label:"Unmarked", icon:"➖" }
+    };
+    const rows = students.map(s=>{
+      const rec = getAttendanceRecord(cls.id, dateKey, s.roll);
+      const statusKey = rec ? rec.status : "unmarked";
+      const meta = STATUS_META[statusKey] || { label:statusKey, icon:"" };
+      return { roll: s.roll, name: s.name, time: rec ? (rec.timeDisplay || "—") : "—", status: meta.label, icon: meta.icon };
+    });
+
+    const presentCount = rows.filter(r=>r.status === "Present").length;
+    const absentCount = rows.filter(r=>r.status === "Absent").length;
+    const lateCount = rows.filter(r=>r.status === "Late").length;
+    const dateLabel = (()=>{
+      const [y,m,d] = dateKey.split("-").map(Number);
+      const dt = new Date(y, (m||1)-1, d||1);
+      return isNaN(dt.getTime()) ? dateKey : dt.toLocaleDateString(undefined, { day:"2-digit", month:"short", year:"numeric" });
+    })();
+
+    const lines = [];
+    lines.push(`📋 ${cls.name} — Attendance — ${dateLabel}`);
+    lines.push(`${rows.length} students · ✅ ${presentCount} Present · ❌ ${absentCount} Absent · ⏰ ${lateCount} Late`);
+    lines.push("――――――――――――――――――――――――");
+    rows.forEach((r,i)=>{
+      const timePart = (r.status === "Present" || r.status === "Late") ? `, ${r.time}` : "";
+      lines.push(`${i+1}. ${r.name} (Roll ${r.roll}) — ${r.icon} ${r.status}${timePart}`);
+    });
+    const report = lines.join("\n");
+
+    const fallbackCopy = ()=>{
+      const textarea = document.createElement("textarea");
+      textarea.value = report;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try{
+        document.execCommand("copy");
+        showToast(`Copied list of ${rows.length} student${rows.length === 1 ? "" : "s"}.`, "success");
+      }catch(err){
+        showToast("Couldn't copy names.", "error");
+      }
+      document.body.removeChild(textarea);
+    };
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(report).then(()=>{
+        showToast(`Copied list of ${rows.length} student${rows.length === 1 ? "" : "s"}.`, "success");
+      }).catch(fallbackCopy);
+    }else{
+      fallbackCopy();
+    }
+  }
+
+  /* ============================================================
+     SECTION 15: EVENT BINDING
+  ============================================================ */
+  function cacheElements(){
+    els = {
+      loadingOverlay: document.getElementById("loadingOverlay"),
+      headerClock: document.getElementById("headerClock"),
+      darkModeToggle: document.getElementById("darkModeToggle"),
+      desktopModeToggle: document.getElementById("desktopModeToggle"),
+      lockAppBtn: document.getElementById("lockAppBtn"),
+      viewportMeta: document.getElementById("viewportMeta"),
+
+      markClassSelect: document.getElementById("markClassSelect"),
+      markForm: document.getElementById("markForm"),
+      rollInput: document.getElementById("rollInput"),
+      studentInfoCard: document.getElementById("studentInfoCard"),
+      statusPreview: document.getElementById("statusPreview"),
+      markAllAbsentBtn: document.getElementById("markAllAbsentBtn"),
+      markListsContainer: document.getElementById("markListsContainer"),
+
+      addClassForm: document.getElementById("addClassForm"),
+      newClassName: document.getElementById("newClassName"),
+      classesListContainer: document.getElementById("classesListContainer"),
+      resetAllBtn: document.getElementById("resetAllBtn"),
+      changePasswordBtn: document.getElementById("changePasswordBtn"),
+
+      recordsClassSelect: document.getElementById("recordsClassSelect"),
+      recordsDateInput: document.getElementById("recordsDateInput"),
+      recordsTodayBtn: document.getElementById("recordsTodayBtn"),
+      recordsSearchInput: document.getElementById("recordsSearchInput"),
+      copyNamesBtn: document.getElementById("copyNamesBtn"),
+      recordsSummary: document.getElementById("recordsSummary"),
+      recordsTbody: document.getElementById("recordsTbody"),
+
+      facultyWorkingDaysInput: document.getElementById("facultyWorkingDaysInput"),
+      addFacultyForm: document.getElementById("addFacultyForm"),
+      newFacultyRoll: document.getElementById("newFacultyRoll"),
+      newFacultyName: document.getElementById("newFacultyName"),
+      newFacultyRole: document.getElementById("newFacultyRole"),
+      newFacultySalary: document.getElementById("newFacultySalary"),
+      facultyMonthInput: document.getElementById("facultyMonthInput"),
+      facultyThisMonthBtn: document.getElementById("facultyThisMonthBtn"),
+      facultyListContainer: document.getElementById("facultyListContainer"),
+
+      fundSummary: document.getElementById("fundSummary"),
+      lateFeeStage1Input: document.getElementById("lateFeeStage1Input"),
+      lateFeeStage2Input: document.getElementById("lateFeeStage2Input"),
+      addFeeForm: document.getElementById("addFeeForm"),
+      feeStudentName: document.getElementById("feeStudentName"),
+      feeRollNumber: document.getElementById("feeRollNumber"),
+      feeClassSelect: document.getElementById("feeClassSelect"),
+      feeRollLookupInfo: document.getElementById("feeRollLookupInfo"),
+      feeChargeTuition: document.getElementById("feeChargeTuition"),
+      feeAmountTuition: document.getElementById("feeAmountTuition"),
+      feeChargeAc: document.getElementById("feeChargeAc"),
+      feeAmountAc: document.getElementById("feeAmountAc"),
+      feeChargeArrears: document.getElementById("feeChargeArrears"),
+      feeAmountArrears: document.getElementById("feeAmountArrears"),
+      feeChargeSports: document.getElementById("feeChargeSports"),
+      feeAmountSports: document.getElementById("feeAmountSports"),
+      feeChargeMusic: document.getElementById("feeChargeMusic"),
+      feeAmountMusic: document.getElementById("feeAmountMusic"),
+      feeChargeFines: document.getElementById("feeChargeFines"),
+      feeAmountFines: document.getElementById("feeAmountFines"),
+      feeChargeDiscount: document.getElementById("feeChargeDiscount"),
+      feeAmountDiscount: document.getElementById("feeAmountDiscount"),
+      feeGrandTotalDisplay: document.getElementById("feeGrandTotalDisplay"),
+      feeAmountPaid: document.getElementById("feeAmountPaid"),
+      feeRecurringCheckbox: document.getElementById("feeRecurringCheckbox"),
+      feeRecordsTbody: document.getElementById("feeRecordsTbody"),
+      addFundTxnForm: document.getElementById("addFundTxnForm"),
+      fundTxnType: document.getElementById("fundTxnType"),
+      fundTxnCategory: document.getElementById("fundTxnCategory"),
+      fundTxnAmount: document.getElementById("fundTxnAmount"),
+      fundTxnDesc: document.getElementById("fundTxnDesc"),
+      fundTxnTbody: document.getElementById("fundTxnTbody"),
+
+      toastContainer: document.getElementById("toastContainer"),
+      confirmModal: document.getElementById("confirmModal"),
+      confirmMessage: document.getElementById("confirmMessage"),
+      confirmOkBtn: document.getElementById("confirmOkBtn"),
+      confirmCancelBtn: document.getElementById("confirmCancelBtn")
+    };
+  }
+
+  function bindEvents(){
+    document.querySelectorAll(".tab-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>switchTab(btn.dataset.tab));
+    });
+
+    els.darkModeToggle.addEventListener("click", toggleDarkMode);
+    els.desktopModeToggle.addEventListener("click", toggleDesktopMode);
+    if(els.lockAppBtn) els.lockAppBtn.addEventListener("click", handleLockAppClick);
+
+    // Mark Attendance tab
+    els.markForm.addEventListener("submit", handleMarkAttendance);
+    els.markClassSelect.addEventListener("change", ()=>{
+      ui.markClassId = els.markClassSelect.value;
+      state.settings.lastMarkClassId = ui.markClassId;
+      saveState();
+      renderMarkLists();
+      renderStudentInfoCard(null);
+      els.rollInput.focus();
+    });
+    els.markAllAbsentBtn.addEventListener("click", handleMarkAllAbsent);
+    if(els.studentInfoCard){
+      els.studentInfoCard.addEventListener("click", (e)=>{
+        const feeLookupBtn = e.target.closest('[data-action="open-fee-lookup"]');
+        if(feeLookupBtn){ handleOpenFeeLookup(feeLookupBtn.dataset.roll); }
+      });
+    }
+    els.markListsContainer.addEventListener("click", (e)=>{
+      const copyBtn = e.target.closest('[data-action="copy-status-list"]');
+      if(copyBtn){ e.stopPropagation(); handleCopyStatusList(copyBtn.dataset.status); return; }
+      const header = e.target.closest('[data-action="toggle-status-col"]');
+      if(header){ toggleStatusCol(header.dataset.status); }
+    });
+
+    // Classes tab
+    els.addClassForm.addEventListener("submit", handleAddClass);
+    if(els.changePasswordBtn) els.changePasswordBtn.addEventListener("click", handleChangePassword);
+    els.resetAllBtn.addEventListener("click", handleResetAllData);
+    els.classesListContainer.addEventListener("click", (e)=>{
+      const deleteClassBtn = e.target.closest('[data-action="delete-class"]');
+      if(deleteClassBtn){ e.stopPropagation(); handleDeleteClass(deleteClassBtn.dataset.classId); return; }
+      const deleteStudentBtn = e.target.closest('[data-action="delete-student"]');
+      if(deleteStudentBtn){ e.stopPropagation(); handleDeleteStudent(deleteStudentBtn.dataset.classId, deleteStudentBtn.dataset.roll); return; }
+      const feeLookupBtn = e.target.closest('[data-action="open-fee-lookup"]');
+      if(feeLookupBtn){ e.stopPropagation(); handleOpenFeeLookup(feeLookupBtn.dataset.roll); return; }
+      const editClassBtn = e.target.closest('[data-action="edit-class"]');
+      if(editClassBtn){ e.stopPropagation(); startEditClass(editClassBtn.dataset.classId); return; }
+      const cancelRenameBtn = e.target.closest('[data-action="cancel-rename-class"]');
+      if(cancelRenameBtn){ e.stopPropagation(); cancelEditClass(); return; }
+      const renameForm = e.target.closest(".rename-class-form");
+      if(renameForm){ e.stopPropagation(); return; } // don't let clicks in the rename field toggle collapse
+      const toggleTarget = e.target.closest('[data-action="toggle-class"]');
+      if(toggleTarget){ toggleClassExpand(toggleTarget.dataset.classId); }
+    });
+    els.classesListContainer.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape" && e.target.closest(".rename-class-input")) cancelEditClass();
+    });
+    els.classesListContainer.addEventListener("submit", (e)=>{
+      const renameForm = e.target.closest(".rename-class-form");
+      if(renameForm){
+        e.preventDefault();
+        const classId = renameForm.dataset.classId;
+        const input = renameForm.querySelector(".rename-class-input");
+        handleRenameClass(classId, input.value);
+        return;
+      }
+      const form = e.target.closest(".add-student-form");
+      if(!form) return;
+      e.preventDefault();
+      const classId = form.dataset.classId;
+      const rollInput = form.querySelector('[data-field="roll"]');
+      const nameInput = form.querySelector('[data-field="name"]');
+      const chargeInputs = {
+        tuition: form.querySelector('[data-field="chg-tuition"]'),
+        ac: form.querySelector('[data-field="chg-ac"]'),
+        arrears: form.querySelector('[data-field="chg-arrears"]'),
+        sports: form.querySelector('[data-field="chg-sports"]'),
+        music: form.querySelector('[data-field="chg-music"]'),
+        discount: form.querySelector('[data-field="chg-discount"]')
+      };
+      handleAddStudent(classId, rollInput, nameInput, chargeInputs);
+    });
+
+    // Records tab
+    els.recordsClassSelect.addEventListener("change", ()=>{
+      ui.recordsClassId = els.recordsClassSelect.value;
+      state.settings.lastRecordsClassId = ui.recordsClassId;
+      saveState();
+      renderRecordsTable();
+    });
+    els.recordsDateInput.addEventListener("change", ()=>{
+      ui.recordsDate = els.recordsDateInput.value || todayKey();
+      renderRecordsTable();
+    });
+    els.recordsTodayBtn.addEventListener("click", ()=>{
+      ui.recordsDate = todayKey();
+      els.recordsDateInput.value = ui.recordsDate;
+      renderRecordsTable();
+    });
+    els.recordsSearchInput.addEventListener("input", ()=>{
+      ui.recordsSearch = els.recordsSearchInput.value;
+      renderRecordsTable();
+    });
+    els.copyNamesBtn.addEventListener("click", handleCopyNames);
+    els.recordsTbody.addEventListener("change", (e)=>{
+      const select = e.target.closest('select[data-action="change-status"]');
+      if(!select) return;
+      handleStatusOverride(select.dataset.roll, select.value);
+    });
+
+    // Faculty tab
+    els.addFacultyForm.addEventListener("submit", handleAddFaculty);
+    els.facultyWorkingDaysInput.addEventListener("change", ()=>{
+      const val = Number(els.facultyWorkingDaysInput.value);
+      state.settings.facultyWorkingDays = (Number.isFinite(val) && val > 0) ? val : 26;
+      saveState();
+      els.facultyWorkingDaysInput.value = getFacultyWorkingDays();
+      renderFacultyTab();
+    });
+    els.facultyMonthInput.addEventListener("change", ()=>{
+      ui.facultyMonth = els.facultyMonthInput.value || todayMonthKey();
+      renderFacultyTab();
+    });
+    els.facultyThisMonthBtn.addEventListener("click", ()=>{
+      ui.facultyMonth = todayMonthKey();
+      els.facultyMonthInput.value = ui.facultyMonth;
+      renderFacultyTab();
+    });
+    els.facultyListContainer.addEventListener("click", (e)=>{
+      const markBtn = e.target.closest('[data-action="mark-faculty"]');
+      if(markBtn){ handleMarkFaculty(markBtn.dataset.facultyId, markBtn.dataset.status); return; }
+      const delBtn = e.target.closest('[data-action="delete-faculty"]');
+      if(delBtn){ handleDeleteFaculty(delBtn.dataset.facultyId); return; }
+    });
+
+    // Fund Management tab
+    els.lateFeeStage1Input.addEventListener("change", ()=>{
+      const val = Number(els.lateFeeStage1Input.value);
+      state.settings.lateFeeStage1Amount = (Number.isFinite(val) && val >= 0) ? val : DEFAULT_LATE_FEE_STAGE_AMOUNT;
+      saveState();
+      els.lateFeeStage1Input.value = getLateFeeStageAmount(1);
+      processRecurringFees();
+      renderFeeRecordsTable();
+      renderFundSummary();
+    });
+    els.lateFeeStage2Input.addEventListener("change", ()=>{
+      const val = Number(els.lateFeeStage2Input.value);
+      state.settings.lateFeeStage2Amount = (Number.isFinite(val) && val >= 0) ? val : DEFAULT_LATE_FEE_STAGE_AMOUNT;
+      saveState();
+      els.lateFeeStage2Input.value = getLateFeeStageAmount(2);
+      processRecurringFees();
+      renderFeeRecordsTable();
+      renderFundSummary();
+    });
+    Object.keys(FEE_CHARGE_FIELDS).forEach(key=>{
+      const f = FEE_CHARGE_FIELDS[key];
+      const checkboxEl = els[f.checkbox], amountEl = els[f.amount];
+      if(!checkboxEl || !amountEl) return;
+      checkboxEl.addEventListener("change", ()=>handleFeeChargeToggle(checkboxEl, amountEl));
+      amountEl.addEventListener("input", updateFeeGrandTotalDisplay);
+    });
+    if(els.feeChargeDiscount && els.feeAmountDiscount){
+      els.feeChargeDiscount.addEventListener("change", ()=>handleFeeChargeToggle(els.feeChargeDiscount, els.feeAmountDiscount));
+      els.feeAmountDiscount.addEventListener("input", updateFeeGrandTotalDisplay);
+    }
+    els.addFeeForm.addEventListener("submit", handleAddFeeRecord);
+    if(els.feeRollNumber){
+      els.feeRollNumber.addEventListener("change", handleFeeRollLookup);
+      els.feeRollNumber.addEventListener("blur", handleFeeRollLookup);
+    }
+    els.feeRecordsTbody.addEventListener("click", (e)=>{
+      const payBtn = e.target.closest('[data-action="add-fee-payment"]');
+      if(payBtn) handleAddFeePayment(payBtn.dataset.feeId);
+    });
+    els.feeRecordsTbody.addEventListener("change", (e)=>{
+      const waiveBox = e.target.closest('[data-action="toggle-late-fee-waive"]');
+      if(waiveBox) handleToggleLateFeeWaive(waiveBox.dataset.feeId, !waiveBox.checked);
+    });
+    els.addFundTxnForm.addEventListener("submit", handleAddFundTxn);
+    els.fundTxnTbody.addEventListener("click", (e)=>{
+      const delBtn = e.target.closest('[data-action="delete-fund-txn"]');
+      if(delBtn) handleDeleteFundTxn(delBtn.dataset.txnId);
+    });
+
+    // Confirm modal: backdrop click + Escape key
+    els.confirmModal.addEventListener("click", (e)=>{
+      if(e.target === els.confirmModal) hideConfirm();
+    });
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape" && els.confirmModal.classList.contains("active")) hideConfirm();
+    });
+  }
+
+  /* ============================================================
+     SECTION 15b: FACULTY TAB — RENDER & LOGIC
+  ============================================================ */
+  function renderFacultyTab(){
+    if(els.facultyWorkingDaysInput && document.activeElement !== els.facultyWorkingDaysInput){
+      els.facultyWorkingDaysInput.value = getFacultyWorkingDays();
+    }
+    const container = els.facultyListContainer;
+    if(!container) return;
+    if(state.faculty.length === 0){
+      container.innerHTML = `<div class="empty-state glass-card">No faculty added yet. Add your first teacher above to start tracking attendance and payroll.</div>`;
+      return;
+    }
+    const monthKey = ui.facultyMonth || todayMonthKey();
+    const dateKey = todayKey();
+    const sorted = [...state.faculty].sort((a,b)=>a.name.localeCompare(b.name));
+
+    container.innerHTML = sorted.map(fac=>{
+      const stats = computeFacultyMonthStats(fac.id, monthKey);
+      const todayRec = getFacultyAttendanceRecord(fac.id, dateKey);
+      const todayStatus = todayRec ? todayRec.status : "unmarked";
+      const todayLabel = todayStatus === "unmarked" ? "Not marked" : todayStatus.toUpperCase();
+
+      const banner = stats.deductionDays > 0 ? `
+        <div class="deduction-banner">
+          ⚠️ ${stats.conversions > 0
+            ? `${stats.late} late arrival${stats.late === 1 ? "" : "s"} this month → ${formatDays(stats.conversions)} day${stats.conversions === 1 ? "" : "s"} of pay deducted (¼ day per late). `
+            : ""}${stats.absent > 0 ? `${stats.absent} explicit absence${stats.absent === 1 ? "" : "s"} recorded. ` : ""}
+          Total deduction for ${formatMonthLabel(monthKey)}: <strong>PKR ${formatMoney(stats.deductionAmount)}</strong> (${formatDays(stats.deductionDays)} day${stats.deductionDays === 1 ? "" : "s"}).
+        </div>` : "";
+
+      return `
+      <div class="faculty-card glass-card">
+        <div class="faculty-card-header">
+          <div>
+            <div class="faculty-card-title">${escapeHtml(fac.name)} <span class="student-roll" style="font-size:.8rem;">Roll ${escapeHtml(fac.roll || "—")}</span></div>
+            <div class="faculty-meta">${escapeHtml(fac.role || "Faculty")} · PKR ${formatMoney(fac.monthlySalary)} / month</div>
+          </div>
+          <button class="icon-btn danger" data-action="delete-faculty" data-faculty-id="${fac.id}" title="Remove faculty">🗑</button>
+        </div>
+
+        <div class="faculty-mark-row">
+          <span style="font-size:.8rem;color:var(--text-secondary);">Today: <span class="badge ${STATUS_COLOR[todayStatus] || "muted"}">${todayLabel}</span></span>
+          <div class="faculty-mark-actions">
+            <button type="button" class="btn btn-outline" data-action="mark-faculty" data-faculty-id="${fac.id}" data-status="present">✓ Present</button>
+            <button type="button" class="btn btn-outline" data-action="mark-faculty" data-faculty-id="${fac.id}" data-status="late">⏰ Late</button>
+            <button type="button" class="btn btn-outline-danger" data-action="mark-faculty" data-faculty-id="${fac.id}" data-status="absent">✕ Absent</button>
+          </div>
+        </div>
+
+        ${banner}
+
+        <div class="faculty-stats-grid">
+          <div class="stat-mini"><div class="stat-mini-value">${stats.present}</div><div class="stat-mini-label">Present</div></div>
+          <div class="stat-mini"><div class="stat-mini-value">${stats.late}</div><div class="stat-mini-label">Late</div></div>
+          <div class="stat-mini"><div class="stat-mini-value">${stats.absent}</div><div class="stat-mini-label">Absent</div></div>
+          <div class="stat-mini"><div class="stat-mini-value">PKR ${formatMoney(stats.deductionAmount)}</div><div class="stat-mini-label">Deducted</div></div>
+          <div class="stat-mini"><div class="stat-mini-value">PKR ${formatMoney(stats.netPay)}</div><div class="stat-mini-label">Net Pay</div></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function handleAddFaculty(e){
+    e.preventDefault();
+    const roll = els.newFacultyRoll.value.trim();
+    const name = els.newFacultyName.value.trim();
+    const role = els.newFacultyRole.value.trim();
+    const salary = Number(els.newFacultySalary.value);
+    if(!roll){
+      showToast("Please enter the teacher's roll number.", "error");
+      return;
+    }
+    if(!name){
+      showToast("Please enter the teacher's name.", "error");
+      return;
+    }
+    if(!salary || salary <= 0){
+      showToast("Please enter a valid monthly salary.", "error");
+      return;
+    }
+    const dupFaculty = findFacultyByRoll(roll);
+    if(dupFaculty){
+      showToast(`Roll number "${roll}" is already assigned to ${dupFaculty.name} on the Faculty list.`, "error");
+      return;
+    }
+    const dupStudent = findStudentGlobal(roll);
+    if(dupStudent){
+      showToast(`Roll number "${roll}" is already assigned to student ${dupStudent.student.name} in ${dupStudent.cls.name}. Roll numbers must be unique across students and teachers.`, "error");
+      return;
+    }
+    state.faculty.push({ id: generateId(), roll, name, role, monthlySalary: salary });
+    saveState();
+    els.newFacultyRoll.value = "";
+    els.newFacultyName.value = "";
+    els.newFacultyRole.value = "";
+    els.newFacultySalary.value = "";
+    showToast(`${name} added to faculty.`, "success");
+    renderFacultyTab();
+    els.newFacultyRoll.focus();
+  }
+
+  function handleDeleteFaculty(facultyId){
+    const fac = getFacultyById(facultyId);
+    if(!fac) return;
+    showConfirm(`Remove ${fac.name} from faculty? Their attendance history will also be deleted.`, ()=>{
+      state.faculty = state.faculty.filter(f=>f.id !== facultyId);
+      delete state.facultyAttendance[facultyId];
+      state.tombstones.faculty[facultyId] = Date.now();
+      saveState();
+      showToast(`${fac.name} removed.`, "error");
+      renderFacultyTab();
+    });
+  }
+
+  // Shared by both the admin buttons on the Faculty tab and the roll-number
+  // kiosk on the Mark Attendance tab: records today's status for a teacher
+  // and applies the "4 lates = 1 day absent" payroll deduction if a fresh
+  // conversion just happened. Does NOT show the "marked X" toast itself —
+  // callers show that with wording appropriate to their context.
+  function applyFacultyAttendanceMark(fac, status, source){
+    const dateKey = todayKey();
+    const monthKey = todayMonthKey();
+    const before = computeFacultyMonthStats(fac.id, monthKey);
+
+    const now = new Date();
+    setFacultyAttendanceRecord(fac.id, dateKey, {
+      status, timeDisplay: formatTime(now), timestamp: now.getTime(), source
+    });
+    saveState();
+
+    const after = computeFacultyMonthStats(fac.id, monthKey);
+    playSound(status);
+
+    // Detect a fresh crossing into a new "4 lates = 1 day absent" conversion
+    // and automatically deduct pay, crediting the saving to the fund ledger.
+    // A faculty member can only hold one attendance record per calendar day
+    // (setFacultyAttendanceRecord overwrites same-day entries), so the late
+    // deduction tied to "this faculty member, this day" is a deterministic,
+    // one-time event. Giving it a stable id (instead of a random one) means
+    // that even if this runs twice for the same day — a double click, a retry
+    // after a dropped save, or two devices both detecting the crossing before
+    // they've synced with each other — the merge/duplicate-guard in
+    // addFundTransaction collapses it back down to a single ledger entry.
+    if(after.conversions > before.conversions){
+      const newConversions = after.conversions - before.conversions;
+      const deductionForThis = newConversions * after.dailyRate;
+      const autoTxnId = `auto_late_${fac.id}_${dateKey}`;
+      if(!state.fundTransactions.some(t=>t.id === autoTxnId)){
+        showToast(`${fac.name} has now been late ${after.late} times this month — ${newConversions} day${newConversions === 1 ? "" : "s"} marked absent and PKR ${formatMoney(deductionForThis)} deducted from pay.`, "error");
+        addFundTransaction({
+          id: autoTxnId,
+          type: "income",
+          category: "Salary Deduction (Attendance)",
+          description: `${fac.name} — ${newConversions} day(s) deducted after ${after.late} late arrivals in ${formatMonthLabel(monthKey)}`,
+          amount: deductionForThis,
+          date: dateKey,
+          auto: true
+        });
+        renderFundTab();
+      }
+    }
+    return { timeDisplay: formatTime(now) };
+  }
+
+  function handleMarkFaculty(facultyId, status){
+    const fac = getFacultyById(facultyId);
+    if(!fac) return;
+    applyFacultyAttendanceMark(fac, status, "admin");
+    showToast(`${fac.name} marked ${status.toUpperCase()} for today.`, status === "absent" ? "error" : (status === "late" ? "warning" : "success"));
+    renderFacultyTab();
+  }
+
+  /* ============================================================
+     SECTION 15c: FUND MANAGEMENT TAB — RENDER & LOGIC
+  ============================================================ */
+  function renderFeeClassSelect(){
+    const sel = els.feeClassSelect;
+    if(!sel) return;
+    const current = sel.value;
+    const classes = [...state.classes].sort((a,b)=>a.name.localeCompare(b.name));
+    sel.innerHTML = `<option value="">General / no class</option>` + classes.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join("");
+    if(classes.some(c=>c.id === current)) sel.value = current;
+  }
+
+  function renderFundSummary(){
+    const el = els.fundSummary;
+    if(!el) return;
+    const s = computeFundSummary();
+    el.innerHTML = `
+      <span class="summary-pill success">Fees Collected: PKR ${formatMoney(s.collected)}</span>
+      <span class="summary-pill warning">Fees Outstanding: PKR ${formatMoney(s.due)}</span>
+      <span class="summary-pill total">Other Income: PKR ${formatMoney(s.income)}</span>
+      <span class="summary-pill danger">Expenses: PKR ${formatMoney(s.expense)}</span>
+      <span class="summary-pill ${s.netBalance >= 0 ? "success" : "danger"}">Net Fund Balance: PKR ${formatMoney(s.netBalance)}</span>
+    `;
+  }
+
+  const CHARGE_LABELS = { tuition:"Tuition", ac:"A/C", arrears:"Arrears", sports:"Sports", music:"Music", fines:"Fines" };
+
+  function describeFeeCharges(r){
+    const charges = r.charges || {};
+    const parts = Object.keys(CHARGE_LABELS)
+      .filter(k => Number(charges[k]) > 0)
+      .map(k => `${CHARGE_LABELS[k]} (PKR ${formatMoney(charges[k])})`);
+    if(Number(r.discount) > 0) parts.push(`Discount (− PKR ${formatMoney(r.discount)})`);
+    return parts.length ? parts.join(", ") : "—";
+  }
+
+  function renderFeeRecordsTable(){
+    const tbody = els.feeRecordsTbody;
+    if(!tbody) return;
+    if(state.feeRecords.length === 0){
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-state">No fee records yet. Add one above.</td></tr>`;
+      return;
+    }
+    const sorted = [...state.feeRecords].sort((a,b)=> (b.period || "").localeCompare(a.period || "") || (b.date || "").localeCompare(a.date || ""));
+    tbody.innerHTML = sorted.map(r=>{
+      const due = getEffectiveAmountDue(r);
+      const paid = Number(r.amountPaid) || 0;
+      const balance = Math.max(0, due - paid);
+      const status = balance <= 0 ? "Paid" : (paid > 0 ? "Partial" : "Unpaid");
+      const color = status === "Paid" ? "success" : (status === "Partial" ? "warning" : "danger");
+      const cls = getClassById(r.classId);
+      const lateFee = Number(r.lateFeeTotal) || 0;
+      const waived = !!r.lateFeeWaived;
+      const period = r.period || monthKeyOf(r.date || todayKey());
+      const stage = lateFeeStageForToday(period, todayKey());
+      const stageNote = stage === 0 ? "Within deadline (by the 10th) — no penalty yet." : (stage === 1 ? "Applied: paid/pending 11th–20th penalty." : "Applied: paid/pending 21st-onward penalty.");
+      const fineCell = lateFee > 0
+        ? `<span class="badge ${waived ? "muted" : "danger"}" title="${escapeHtml(stageNote)}">PKR ${formatMoney(lateFee)}${waived ? " (waived)" : ""}</span>
+           <label class="fine-waive-toggle" title="Uncheck to waive this fine — it will no longer count toward what's due or toward earnings.">
+             <input type="checkbox" data-action="toggle-late-fee-waive" data-fee-id="${r.id}" ${waived ? "" : "checked"} /> Count fine
+           </label>`
+        : `<span class="badge muted" title="${escapeHtml(stageNote)}">PKR 0</span>`;
+      return `
+        <tr>
+          <td>${escapeHtml(r.studentName)}</td>
+          <td>${escapeHtml(r.roll || "—")}</td>
+          <td>${cls ? escapeHtml(cls.name) : "General"}</td>
+          <td><span class="fee-charge-breakdown">${describeFeeCharges(r)}</span>${r.recurring ? ` <span class="tag-manual">recurring</span>` : ""}</td>
+          <td>${fineCell}</td>
+          <td>${escapeHtml(formatMonthLabel(period))}</td>
+          <td>PKR ${formatMoney(due)}</td>
+          <td>PKR ${formatMoney(paid)}</td>
+          <td>PKR ${formatMoney(balance)}</td>
+          <td><span class="badge ${color}">${status}</span></td>
+          <td>${balance > 0 ? `<button type="button" class="btn btn-outline" data-action="add-fee-payment" data-fee-id="${r.id}">+ Payment</button>` : "—"}</td>
+        </tr>`;
+    }).join("");
+  }
+
+  // Maps each chargeable line item to its checkbox + amount input element keys.
+  const FEE_CHARGE_FIELDS = {
+    tuition: { checkbox:"feeChargeTuition", amount:"feeAmountTuition" },
+    ac:      { checkbox:"feeChargeAc",      amount:"feeAmountAc" },
+    arrears: { checkbox:"feeChargeArrears", amount:"feeAmountArrears" },
+    sports:  { checkbox:"feeChargeSports",  amount:"feeAmountSports" },
+    music:   { checkbox:"feeChargeMusic",   amount:"feeAmountMusic" },
+    fines:   { checkbox:"feeChargeFines",   amount:"feeAmountFines" }
+  };
+
+  function readChargeAmount(checkboxEl, amountEl){
+    if(!checkboxEl || !amountEl || !checkboxEl.checked) return 0;
+    const v = Number(amountEl.value);
+    return (Number.isFinite(v) && v > 0) ? v : 0;
+  }
+
+  function computeFeeChargesFromForm(){
+    const charges = {};
+    Object.keys(FEE_CHARGE_FIELDS).forEach(key=>{
+      const f = FEE_CHARGE_FIELDS[key];
+      charges[key] = readChargeAmount(els[f.checkbox], els[f.amount]);
+    });
+    return charges;
+  }
+
+  function computeFeeDiscountFromForm(){
+    return readChargeAmount(els.feeChargeDiscount, els.feeAmountDiscount);
+  }
+
+  function computeFeeGrandTotalFromForm(){
+    const charges = computeFeeChargesFromForm();
+    const subtotal = Object.values(charges).reduce((a,b)=>a+b, 0);
+    const discount = computeFeeDiscountFromForm();
+    return Math.max(0, subtotal - discount);
+  }
+
+  function updateFeeGrandTotalDisplay(){
+    if(!els.feeGrandTotalDisplay) return;
+    els.feeGrandTotalDisplay.textContent = `Grand Total: PKR ${formatMoney(computeFeeGrandTotalFromForm())}`;
+  }
+
+  // Enables/disables each charge's amount input to match its checkbox, and
+  // keeps the live grand total in sync.
+  function handleFeeChargeToggle(checkboxEl, amountEl){
+    if(!checkboxEl || !amountEl) return;
+    amountEl.disabled = !checkboxEl.checked;
+    if(!checkboxEl.checked) amountEl.value = "";
+    updateFeeGrandTotalDisplay();
+  }
+
+  function resetFeeForm(){
+    els.feeStudentName.value = "";
+    els.feeRollNumber.value = "";
+    Object.keys(FEE_CHARGE_FIELDS).forEach(key=>{
+      const f = FEE_CHARGE_FIELDS[key];
+      if(els[f.checkbox]) els[f.checkbox].checked = false;
+      if(els[f.amount]){ els[f.amount].value = ""; els[f.amount].disabled = true; }
+    });
+    if(els.feeChargeDiscount) els.feeChargeDiscount.checked = false;
+    if(els.feeAmountDiscount){ els.feeAmountDiscount.value = ""; els.feeAmountDiscount.disabled = true; }
+    els.feeAmountPaid.value = "";
+    if(els.feeRecurringCheckbox) els.feeRecurringCheckbox.checked = false;
+    if(els.feeRollLookupInfo) els.feeRollLookupInfo.innerHTML = "";
+    updateFeeGrandTotalDisplay();
+  }
+
+  // Looks up the roll number typed into the Fund tab. If it matches a known
+  // student, auto-fills their name/class and their saved default charges
+  // (tuition, A/C, arrears, sports, music, discount), and shows a summary of
+  // where they currently stand (due/paid/remaining) for this billing period.
+  function handleFeeRollLookup(){
+    const roll = (els.feeRollNumber.value || "").trim();
+    if(!els.feeRollLookupInfo) return;
+    if(!roll){ els.feeRollLookupInfo.innerHTML = ""; return; }
+    const match = findStudentGlobal(roll);
+    if(!match){
+      els.feeRollLookupInfo.innerHTML = `<span class="badge muted">No student found with roll "${escapeHtml(roll)}"</span>`;
+      return;
+    }
+    const { cls, student } = match;
+    els.feeStudentName.value = student.name;
+    if(els.feeClassSelect) els.feeClassSelect.value = cls.id;
+    const dc = student.defaultCharges || {};
+    ["tuition","ac","arrears","sports","music"].forEach(key=>{
+      const f = FEE_CHARGE_FIELDS[key];
+      const amt = Number(dc[key]) || 0;
+      if(!els[f.checkbox] || !els[f.amount]) return;
+      if(amt > 0){
+        els[f.checkbox].checked = true;
+        els[f.amount].disabled = false;
+        els[f.amount].value = String(amt);
+      } else {
+        els[f.checkbox].checked = false;
+        els[f.amount].disabled = true;
+        els[f.amount].value = "";
+      }
+    });
+    const discount = Number(student.discount) || 0;
+    if(els.feeChargeDiscount && els.feeAmountDiscount){
+      els.feeChargeDiscount.checked = discount > 0;
+      els.feeAmountDiscount.disabled = discount <= 0;
+      els.feeAmountDiscount.value = discount > 0 ? String(discount) : "";
+    }
+    updateFeeGrandTotalDisplay();
+    const summary = getStudentFeeSummary(roll);
+    els.feeRollLookupInfo.innerHTML = `
+      <span class="badge muted">${escapeHtml(student.name)} · ${escapeHtml(cls.name)}</span>
+      <span class="badge">Due PKR ${formatMoney(summary.due)}</span>
+      <span class="badge">Paid PKR ${formatMoney(summary.paid)}</span>
+      <span class="badge ${feeStatusBadgeColor(summary.status)}">Remaining PKR ${formatMoney(summary.balance)} · ${summary.status}</span>
+    `;
+  }
+
+  function handleAddFeeRecord(e){
+    e.preventDefault();
+    const studentName = els.feeStudentName.value.trim();
+    const roll = els.feeRollNumber.value.trim();
+    const classId = els.feeClassSelect.value || null;
+    const recurring = !!(els.feeRecurringCheckbox && els.feeRecurringCheckbox.checked);
+
+    if(!studentName){
+      showToast("Please enter the student's name.", "error");
+      return;
+    }
+    if(!roll){
+      showToast("Please enter the student's roll number.", "error");
+      return;
+    }
+
+    const charges = computeFeeChargesFromForm();
+    const discount = computeFeeDiscountFromForm();
+    const subtotal = Object.values(charges).reduce((a,b)=>a+b, 0);
+    if(subtotal <= 0){
+      showToast("Please tick at least one charge and enter its amount.", "error");
+      return;
+    }
+    const due = Math.max(0, subtotal - discount);
+    const paid = Number(els.feeAmountPaid.value) || 0;
+    if(paid > due){
+      showToast("Amount paid cannot exceed the grand total.", "error");
+      return;
+    }
+
+    const period = todayMonthKey();
+    const id = feeRecordIdFor(roll, period) || generateId();
+    // One bill per student per month: if a record for this student/period
+    // already exists — including one created moments ago on another device
+    // that hasn't synced here yet — this same deterministic id already
+    // matches it, so it's a no-op here and the merge will collapse the two
+    // writes into a single record instead of double-billing.
+    if(state.feeRecords.some(r=>r.id === id)){
+      showToast(`${studentName} already has a fee record for ${formatMonthLabel(period)} — only one bill per student per month.`, "error");
+      return;
+    }
+    state.feeRecords.push({
+      id,
+      seriesId: recurring ? id : null,
+      studentName, roll, classId,
+      charges, discount,
+      recurring,
+      period,
+      baseAmountDue: due,
+      amountDue: due,
+      amountPaid: paid,
+      lateFeeTotal: 0,
+      lateFeeStage: 0,
+      lateFeeLastAppliedDate: null,
+      lateFeeWaived: false,
+      lateFeeWaivedAt: 0,
+      date: todayKey()
+    });
+    saveState();
+    resetFeeForm();
+    showToast(`Fee record added for ${studentName}${recurring ? " (recurring monthly)" : ""}. Grand total PKR ${formatMoney(due)}.`, "success");
+    // If this record is already past the 10th/20th of its billing month and
+    // unpaid, apply the one-time late fine it owes immediately rather than
+    // waiting for the next periodic check.
+    processRecurringFees();
+    renderFeeRecordsTable();
+    renderFundSummary();
+  }
+
+  function handleAddFeePayment(feeId){
+    const rec = state.feeRecords.find(r=>r.id === feeId);
+    if(!rec) return;
+    const balance = Math.max(0, getEffectiveAmountDue(rec) - (Number(rec.amountPaid) || 0));
+    const input = window.prompt(`Record a payment for ${rec.studentName} (outstanding balance PKR ${formatMoney(balance)}):`, String(balance));
+    if(input === null) return;
+    const amount = Number(input);
+    if(!amount || amount <= 0){
+      showToast("Please enter a valid payment amount.", "error");
+      return;
+    }
+    if(amount > balance){
+      showToast("Payment exceeds the outstanding balance.", "error");
+      return;
+    }
+    rec.amountPaid = (Number(rec.amountPaid) || 0) + amount;
+    saveState();
+    showToast(`PKR ${formatMoney(amount)} payment recorded for ${rec.studentName}.`, "success");
+    renderFeeRecordsTable();
+    renderFundSummary();
+  }
+
+  // The attendant can deselect ("Count fine" checkbox) an already-applied
+  // late fine — e.g. to waive it for a student. A waived fine still shows
+  // in the fine column for the record, but drops out of what's due and out
+  // of earnings until/unless it's reselected.
+  function handleToggleLateFeeWaive(feeId, waive){
+    const rec = state.feeRecords.find(r=>r.id === feeId);
+    if(!rec) return;
+    rec.lateFeeWaived = !!waive;
+    rec.lateFeeWaivedAt = Date.now();
+    saveState();
+    showToast(waive ? `Late fine waived for ${rec.studentName}.` : `Late fine restored for ${rec.studentName}.`, "info");
+    renderFeeRecordsTable();
+    renderFundSummary();
+  }
+
+  function renderFundTxnTable(){
+    const tbody = els.fundTxnTbody;
+    if(!tbody) return;
+    if(state.fundTransactions.length === 0){
+      tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No fund transactions yet.</td></tr>`;
+      return;
+    }
+    const sorted = [...state.fundTransactions].sort((a,b)=> (b.date || "").localeCompare(a.date || ""));
+    tbody.innerHTML = sorted.map(t=>{
+      const color = t.type === "income" ? "success" : "danger";
+      return `
+        <tr>
+          <td>${escapeHtml(t.date)}</td>
+          <td><span class="badge ${color}">${t.type === "income" ? "Income" : "Expense"}</span></td>
+          <td>${escapeHtml(t.category)}${t.auto ? ` <span class="tag-manual">auto</span>` : ""}</td>
+          <td>${escapeHtml(t.description || "—")}</td>
+          <td>PKR ${formatMoney(t.amount)}</td>
+          <td>${t.auto ? "—" : `<button class="icon-btn danger" data-action="delete-fund-txn" data-txn-id="${t.id}" title="Delete">🗑</button>`}</td>
+        </tr>`;
+    }).join("");
+  }
+
+  function handleAddFundTxn(e){
+    e.preventDefault();
+    const type = els.fundTxnType.value === "expense" ? "expense" : "income";
+    const category = els.fundTxnCategory.value.trim();
+    const amount = Number(els.fundTxnAmount.value);
+    const description = els.fundTxnDesc.value.trim();
+    if(!category){
+      showToast("Please enter a category.", "error");
+      return;
+    }
+    if(!amount || amount <= 0){
+      showToast("Please enter a valid amount.", "error");
+      return;
+    }
+    addFundTransaction({ type, category, description, amount, date: todayKey() });
+    els.fundTxnCategory.value = "";
+    els.fundTxnAmount.value = "";
+    els.fundTxnDesc.value = "";
+    showToast("Transaction recorded.", "success");
+    renderFundTxnTable();
+    renderFundSummary();
+  }
+
+  function handleDeleteFundTxn(txnId){
+    const txn = state.fundTransactions.find(t=>t.id === txnId);
+    if(!txn || txn.auto) return;
+    showConfirm("Delete this transaction? This cannot be undone.", ()=>{
+      state.fundTransactions = state.fundTransactions.filter(t=>t.id !== txnId);
+      state.tombstones.fundTransactions[txnId] = Date.now();
+      saveState();
+      showToast("Transaction deleted.", "error");
+      renderFundTxnTable();
+      renderFundSummary();
+    });
+  }
+
+  function renderFundTab(){
+    if(els.lateFeeStage1Input && document.activeElement !== els.lateFeeStage1Input){
+      els.lateFeeStage1Input.value = getLateFeeStageAmount(1);
+    }
+    if(els.lateFeeStage2Input && document.activeElement !== els.lateFeeStage2Input){
+      els.lateFeeStage2Input.value = getLateFeeStageAmount(2);
+    }
+    renderFeeClassSelect();
+    renderFundSummary();
+    renderFeeRecordsTable();
+    renderFundTxnTable();
+  }
+
+  /* ============================================================
+     SECTION 16: INITIALIZATION
+  ============================================================ */
+  async function init(){
+    cacheElements();
+    applyInitialDarkMode();
+    applyInitialDesktopMode();
+
+    try{
+      state = await loadState();
+    }catch(err){
+      console.warn("Attendance Systems: unexpected error loading state, starting with local cache.", err);
+      state = loadLocalCache();
+    }
+    sanitizeState();
+    processRecurringFees();
+
+    ui.markClassId = state.settings.lastMarkClassId || null;
+    ui.recordsClassId = state.settings.lastRecordsClassId || null;
+    ui.recordsDate = todayKey();
+    els.recordsDateInput.value = ui.recordsDate;
+    ui.facultyMonth = todayMonthKey();
+    els.facultyMonthInput.value = ui.facultyMonth;
+    els.facultyWorkingDaysInput.value = getFacultyWorkingDays();
+
+    bindEvents();
+    renderClassSelects();
+    renderClassesTab();
+    renderMarkLists();
+    renderRecordsTable();
+    renderFacultyTab();
+    renderFundTab();
+    updateHeaderClock();
+    updateStatusPreview();
+    try{ subscribeToCloudUpdates(); }catch(err){ console.warn("Attendance Systems: could not start live sync.", err); }
+
+    setInterval(()=>{
+      updateHeaderClock();
+      updateStatusPreview();
+    }, 1000);
+
+    // Catch the monthly rollover / daily late-fee accrual if the app is
+    // simply left open across a day boundary (e.g. overnight into the
+    // 1st or the 5th) rather than reloaded fresh.
+    setInterval(()=>{
+      if(processRecurringFees()){
+        renderFeeRecordsTable();
+        renderFundSummary();
+      }
+    }, 30 * 60 * 1000);
+
+    setTimeout(()=>{
+      els.loadingOverlay.classList.add("hide");
+      if(getClassById(ui.markClassId)) els.rollInput.focus();
+    }, 550);
+  }
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    if(isUnlocked()){
+      document.body.classList.remove("locked");
+      const screen = document.getElementById("lockScreen");
+      if(screen) screen.classList.remove("show");
+      startApp();
+    }else{
+      showLockScreen();
+    }
+  });
+})();
+</script>
+</body>
+</html>
